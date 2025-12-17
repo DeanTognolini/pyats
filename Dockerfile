@@ -17,7 +17,8 @@
 # =============================================================================
 
 # Use a specific Python version for reproducibility
-FROM python:3.11-slim
+# Using full image instead of slim to support pyats[full] dependencies
+FROM python:3.11
 
 # Set metadata
 LABEL maintainer="pyats-network-tests"
