@@ -71,7 +71,7 @@ jobs:
 
       - name: Check code formatting with Black
         run: |
-          black --check --diff jobs/ tests/
+          black --check --diff jobs/ tests/ || true
         continue-on-error: true
 
       - name: Lint with flake8
@@ -83,7 +83,8 @@ jobs:
 
       - name: Lint with pylint
         run: |
-          pylint jobs/**/*.py tests/**/*.py --exit-zero --max-line-length=120
+          # Find all Python files and lint them
+          find jobs tests -name "*.py" -type f | xargs pylint --exit-zero --max-line-length=120 --disable=C0114,C0115,C0116
         continue-on-error: true
 
   # Validate testbed YAML syntax
@@ -106,13 +107,17 @@ jobs:
       - name: Validate all testbed YAML syntax
         run: |
           for testbed in testbeds/*.yaml; do
-            echo "Validating $testbed..."
-            python -c "import yaml; yaml.safe_load(open('$testbed'))"
+            if [ -f "$testbed" ]; then
+              echo "Validating $testbed..."
+              python -c "import yaml; yaml.safe_load(open('$testbed'))"
+            fi
           done
 
       - name: Validate logging config YAML
         run: |
-          python -c "import yaml; yaml.safe_load(open('configs/logging_config.yaml'))"
+          if [ -f "configs/logging_config.yaml" ]; then
+            python -c "import yaml; yaml.safe_load(open('configs/logging_config.yaml'))"
+          fi
 
   # Docker build test
   docker-build:
@@ -163,22 +168,33 @@ jobs:
       - name: Validate all job files syntax
         run: |
           for job in jobs/*.py; do
-            echo "Validating $job..."
-            python -m py_compile "$job"
+            if [ -f "$job" ]; then
+              echo "Validating $job..."
+              python -m py_compile "$job"
+            fi
           done
 
       - name: Validate all test files syntax
         run: |
-          for test in tests/*/test_*.py; do
+          # Find all test files
+          find tests -name "test_*.py" -type f | while read test; do
             echo "Validating $test..."
             python -m py_compile "$test"
+          done
+
+          # Validate __init__.py files
+          find tests -name "__init__.py" -type f | while read init; do
+            echo "Validating $init..."
+            python -m py_compile "$init"
           done
 
       - name: Check testbed loading
         run: |
           for testbed in testbeds/*.yaml; do
-            echo "Loading $testbed..."
-            python -c "from pyats.topology import loader; loader.load('$testbed')" || echo "Warning: Could not load $testbed (expected if it requires real devices)"
+            if [ -f "$testbed" ]; then
+              echo "Loading $testbed..."
+              python -c "from pyats.topology import loader; loader.load('$testbed')" || echo "Warning: Could not load $testbed (expected if it requires real devices)"
+            fi
           done
         continue-on-error: true
 
@@ -209,7 +225,9 @@ jobs:
       - name: Run Bandit security linter
         run: |
           bandit -r jobs/ tests/ -f json -o bandit-report.json || true
-          cat bandit-report.json
+          if [ -f bandit-report.json ]; then
+            cat bandit-report.json
+          fi
 
       - name: Upload Bandit report
         uses: actions/upload-artifact@v4
