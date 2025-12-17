@@ -271,6 +271,7 @@ docker-compose run --rm pyats-tests \
 3. **Document topology**: Add comments explaining network design
 4. **Version control testbeds**: Track changes alongside code
 5. **Validate syntax**: Run `python -c "from pyats.topology import loader; loader.load('testbeds/my-testbed.yaml')"`
+6. **Use sfp_type for optical validation**: Add `sfp_type: SFP-10G-LR` to fiber interfaces to validate RX power levels (see `testbeds/README.md` for all supported types)
 
 ### Test Organization
 

@@ -285,7 +285,30 @@ The testbed YAML defines:
 - **Topology**: Interface mappings, links, expected configurations
 - **Custom Attributes**: SFP types, speed/duplex, MTU, etc.
 
-See `testbeds/README.md` and official docs: https://pubhub.devnetcloud.com/media/pyats-getting-started/docs/quickstart/manageconnections.html
+**Layer 1 Custom Attributes:**
+
+| Attribute | Purpose | Example |
+|-----------|---------|---------|
+| `link` | Connect two interfaces (required) | `router1-router2` |
+| `speed` | Expected interface speed validation | `1000`, `10000` |
+| `duplex` | Expected duplex mode validation | `full`, `half` |
+| `mtu` | Expected MTU size validation | `1500`, `9000` |
+| `sfp_type` | **Optical power validation** | `SFP-10G-LR`, `SFP-1G-SX` |
+
+**Using `sfp_type` for Optical Validation:**
+
+When you add `sfp_type` to an interface, the Layer 1 tests will validate that optical RX power is within acceptable thresholds for that SFP type. Supported types: `SFP-10G-SR`, `SFP-10G-LR`, `SFP-10G-ER`, `SFP-1G-SX`, `SFP-1G-LX`.
+
+```yaml
+GigabitEthernet1:
+  link: router1-router2
+  speed: 1000
+  sfp_type: SFP-1G-SX  # Validates RX power: -17.0 to 0.0 dBm
+```
+
+This helps catch fiber degradation, distance mismatches, or failing optics before they cause outages.
+
+See `testbeds/README.md` for complete SFP type documentation and official docs: https://pubhub.devnetcloud.com/media/pyats-getting-started/docs/quickstart/manageconnections.html
 
 ---
 
