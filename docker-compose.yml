@@ -1,0 +1,121 @@
+# =============================================================================
+# Docker Compose Configuration for pyATS Network Testing Framework
+# =============================================================================
+#
+# Usage:
+#   1. Set environment variables in .env file (copy from .env.example)
+#   2. Run tests:
+#      docker-compose up
+#   3. Clean up:
+#      docker-compose down
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  pyats-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pyats-network-tests:latest
+    container_name: pyats-network-tests
+
+    # Environment variables from .env file
+    env_file:
+      - .env
+
+    # Volume mounts
+    volumes:
+      # Mount testbeds directory (read-only)
+      - ./testbeds:/app/testbeds:ro
+
+      # Mount reports directory (read-write)
+      - ./reports:/app/reports
+
+      # Mount archive directory (read-write)
+      - ./archive:/app/archive
+
+      # Mount logs directory (read-write)
+      - ./logs:/app/logs
+
+      # Optional: Mount custom logging config
+      - ./configs/logging_config.yaml:/app/configs/logging_config.yaml:ro
+
+    # Working directory
+    working_dir: /app
+
+    # Command to run
+    # Override this with: docker-compose run pyats-tests <your-command>
+    command: >
+      bash -c "
+        echo '========================================';
+        echo 'pyATS Network Testing Framework';
+        echo '========================================';
+        echo '';
+        echo 'Available Commands:';
+        echo '';
+        echo '  Run all test suites:';
+        echo '    pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/';
+        echo '';
+        echo '  Run specific test suite (Layer 1):';
+        echo '    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs /app/reports/';
+        echo '';
+        echo '  List available test suites:';
+        echo '    find tests -name \"test_*.py\"';
+        echo '';
+        echo '  Exit and run via docker-compose:';
+        echo '    docker-compose run pyats-tests pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml';
+        echo '';
+        bash
+      "
+
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+
+    # Network configuration
+    network_mode: bridge
+
+    # Resource limits (optional - adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 1G
+
+# =============================================================================
+# Example Commands
+# =============================================================================
+#
+# Build the image:
+#   docker-compose build
+#
+# Run tests interactively:
+#   docker-compose run --rm pyats-tests
+#
+# Run all test suites:
+#   docker-compose run --rm pyats-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
+#
+# Run specific test suite (Layer 1):
+#   docker-compose run --rm pyats-tests \
+#     pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
+#
+# Run with debug logging:
+#   docker-compose run --rm pyats-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --loglevel DEBUG
+#
+# Run and generate both HTML and JSON reports:
+#   docker-compose run --rm pyats-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml \
+#     --html-logs /app/reports/ --json-logs /app/reports/
+#
+# Run only specific test suites (via environment variable):
+#   PYATS_TEST_SUITES=layer1,layer3 docker-compose run --rm pyats-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml
+#
+# =============================================================================

@@ -1,0 +1,316 @@
+name: pyATS Network Testing Framework Validation
+
+on:
+  # Run on pull requests to main branch
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'jobs/**'
+      - 'tests/**'
+      - 'testbeds/**'
+      - 'configs/**'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/pyats-validation.yml'
+
+  # Run on push to main branch
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'jobs/**'
+      - 'tests/**'
+      - 'testbeds/**'
+      - 'requirements.txt'
+      - 'Dockerfile'
+
+  # Allow manual workflow dispatch
+  workflow_dispatch:
+    inputs:
+      testbed:
+        description: 'Testbed file to use (relative to testbeds/)'
+        required: false
+        default: 'testbed.yaml'
+      test_suite:
+        description: 'Test suite to run (layer1, layer2, layer3, or all)'
+        required: false
+        default: 'all'
+      log_level:
+        description: 'Log level (DEBUG, INFO, WARNING, ERROR)'
+        required: false
+        default: 'INFO'
+
+  # Optional: Run on a schedule (e.g., daily at 2 AM UTC)
+  # Uncomment to enable scheduled runs
+  # schedule:
+  #   - cron: '0 2 * * *'
+
+jobs:
+  # Lint and syntax check job
+  lint:
+    name: Lint and Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install linting dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pylint black
+
+      - name: Check code formatting with Black
+        run: |
+          black --check --diff jobs/ tests/
+        continue-on-error: true
+
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 jobs/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 jobs/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+      - name: Lint with pylint
+        run: |
+          pylint jobs/**/*.py tests/**/*.py --exit-zero --max-line-length=120
+        continue-on-error: true
+
+  # Validate testbed YAML syntax
+  validate-testbeds:
+    name: Validate Testbed YAML Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate all testbed YAML syntax
+        run: |
+          for testbed in testbeds/*.yaml; do
+            echo "Validating $testbed..."
+            python -c "import yaml; yaml.safe_load(open('$testbed'))"
+          done
+
+      - name: Validate logging config YAML
+        run: |
+          python -c "import yaml; yaml.safe_load(open('configs/logging_config.yaml'))"
+
+  # Docker build test
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: pyats-network-tests:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test Docker image
+        run: |
+          docker run --rm pyats-network-tests:test python --version
+          docker run --rm pyats-network-tests:test pip list | grep pyats
+          docker run --rm pyats-network-tests:test ls -la /app/jobs
+          docker run --rm pyats-network-tests:test ls -la /app/tests
+
+  # pyATS syntax validation (dry run)
+  pyats-syntax:
+    name: pyATS Syntax Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate all job files syntax
+        run: |
+          for job in jobs/*.py; do
+            echo "Validating $job..."
+            python -m py_compile "$job"
+          done
+
+      - name: Validate all test files syntax
+        run: |
+          for test in tests/*/test_*.py; do
+            echo "Validating $test..."
+            python -m py_compile "$test"
+          done
+
+      - name: Check testbed loading
+        run: |
+          for testbed in testbeds/*.yaml; do
+            echo "Loading $testbed..."
+            python -c "from pyats.topology import loader; loader.load('$testbed')" || echo "Warning: Could not load $testbed (expected if it requires real devices)"
+          done
+        continue-on-error: true
+
+  # Security scanning
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+
+      - name: Check for known security vulnerabilities
+        run: |
+          # Check installed packages for known vulnerabilities
+          pip install -r requirements.txt
+          safety check --json || true
+
+      - name: Run Bandit security linter
+        run: |
+          bandit -r jobs/ tests/ -f json -o bandit-report.json || true
+          cat bandit-report.json
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+        if: always()
+
+  # Summary job
+  validation-summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [lint, validate-testbeds, docker-build, pyats-syntax, security-scan]
+    if: always()
+    steps:
+      - name: Check job results
+        run: |
+          echo "Validation Results:"
+          echo "  Lint: ${{ needs.lint.result }}"
+          echo "  Testbed Validation: ${{ needs.validate-testbeds.result }}"
+          echo "  Docker Build: ${{ needs.docker-build.result }}"
+          echo "  pyATS Syntax: ${{ needs.pyats-syntax.result }}"
+          echo "  Security Scan: ${{ needs.security-scan.result }}"
+
+      - name: Set overall status
+        if: |
+          needs.lint.result != 'success' ||
+          needs.validate-testbeds.result != 'success' ||
+          needs.docker-build.result != 'success' ||
+          needs.pyats-syntax.result != 'success'
+        run: |
+          echo "::error::One or more validation checks failed"
+          exit 1
+
+# Optional: Continuous Network Testing Job
+# This job would run actual tests against network devices
+# WARNING: Only enable if you have a test network accessible from GitHub Actions
+# and proper secrets configured
+#
+# network-testing:
+#   name: Network Testing
+#   runs-on: ubuntu-latest
+#   # Only run on main branch or manual dispatch, not on PRs
+#   if: github.event_name != 'pull_request'
+#   needs: [lint, validate-testbeds, docker-build]
+#   steps:
+#     - name: Checkout code
+#       uses: actions/checkout@v4
+#
+#     - name: Set up Python
+#       uses: actions/setup-python@v5
+#       with:
+#         python-version: '3.11'
+#         cache: 'pip'
+#
+#     - name: Install dependencies
+#       run: |
+#         python -m pip install --upgrade pip
+#         pip install -r requirements.txt
+#
+#     - name: Run pyATS tests
+#       env:
+#         PYATS_USERNAME: ${{ secrets.PYATS_USERNAME }}
+#         PYATS_PASSWORD: ${{ secrets.PYATS_PASSWORD }}
+#       run: |
+#         pyats run job jobs/run_all.py \
+#           --testbed testbeds/${{ inputs.testbed || 'testbed.yaml' }} \
+#           --html-logs ./reports/ \
+#           --json-logs ./reports/ \
+#           --loglevel ${{ inputs.log_level || 'INFO' }}
+#
+#     - name: Upload test reports
+#       if: always()
+#       uses: actions/upload-artifact@v4
+#       with:
+#         name: pyats-test-reports
+#         path: |
+#           reports/
+#           archive/
+#         retention-days: 30
+#
+#     - name: Publish test results summary
+#       if: always()
+#       run: |
+#         # Parse results and create summary
+#         python -c "
+#         import json
+#         import sys
+#         try:
+#             with open('reports/job.results.json') as f:
+#                 results = json.load(f)
+#             passed = results.get('passed', 0)
+#             failed = results.get('failed', 0)
+#             total = results.get('total', 0)
+#             print(f'## Test Results Summary')
+#             print(f'- Total Tests: {total}')
+#             print(f'- Passed: {passed}')
+#             print(f'- Failed: {failed}')
+#             print(f'- Success Rate: {(passed/total*100):.1f}%' if total > 0 else 'N/A')
+#             sys.exit(0 if failed == 0 else 1)
+#         except Exception as e:
+#             print(f'Failed to parse results: {e}')
+#             sys.exit(1)
+#         " >> $GITHUB_STEP_SUMMARY

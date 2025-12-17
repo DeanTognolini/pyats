@@ -33,11 +33,18 @@
 #         mtu: 1500                # Expected MTU
 #         sfp_type: SFP-10G-SR     # Optional: for optical threshold checks
 #
-# SUPPORTED SFP TYPES:
-# --------------------
-#   SFP-10G-SR, SFP-10G-LR, SFP-10G-ER
-#   SFP-1G-SX, SFP-1G-LX
-#   QSFP-40G-SR4, QSFP-100G-SR4
+# SUPPORTED SFP TYPES (for optical validation):
+# -----------------------------------------------
+#   10G SFPs:
+#     SFP-10G-SR  - Short Range (300m MMF), RX: -9.5 to 2.0 dBm
+#     SFP-10G-LR  - Long Range (10km SMF), RX: -14.4 to 0.5 dBm
+#     SFP-10G-ER  - Extended Range (40km SMF), RX: -15.8 to -1.0 dBm
+#
+#   1G SFPs:
+#     SFP-1G-SX   - Short Range (550m MMF), RX: -17.0 to 0.0 dBm
+#     SFP-1G-LX   - Long Range (10km SMF), RX: -19.0 to -3.0 dBm
+#
+#   Note: To add custom SFP types, edit SFP_THRESHOLDS in tests/layer1/test_layer1.py
 #
 # =============================================================================
 
@@ -97,12 +104,14 @@ topology:
         speed: 1000
         duplex: full
         mtu: 1500
+        sfp_type: SFP-1G-SX          # Fiber link - validate optical levels
       GigabitEthernet2:
         type: ethernet
         link: router1-legacy
         speed: 1000
         duplex: full
         mtu: 1500
+        # No sfp_type - copper link (optical checks will be skipped)
 
   router2:
     interfaces:
@@ -112,6 +121,7 @@ topology:
         speed: 1000
         duplex: full
         mtu: 1500
+        sfp_type: SFP-1G-SX          # Must match router1's SFP type
 
   legacy-router:
     interfaces:
