@@ -1,0 +1,104 @@
+# =============================================================================
+# Docker Compose Configuration for pyATS Layer 1 Validation
+# =============================================================================
+#
+# Usage:
+#   1. Set environment variables in .env file (copy from .env.example)
+#   2. Run tests:
+#      docker-compose up
+#   3. Clean up:
+#      docker-compose down
+#
+# =============================================================================
+
+version: '3.8'
+
+services:
+  pyats-layer1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pyats-layer1:latest
+    container_name: pyats-layer1-validator
+
+    # Environment variables from .env file
+    env_file:
+      - .env
+
+    # Volume mounts
+    volumes:
+      # Mount testbed (read-only)
+      - ./testbed.yaml:/app/testbed.yaml:ro
+
+      # Mount reports directory (read-write)
+      - ./reports:/app/reports
+
+      # Mount archive directory (read-write)
+      - ./archive:/app/archive
+
+      # Mount logs directory (read-write)
+      - ./logs:/app/logs
+
+      # Optional: Mount custom logging config
+      - ./logging_config.yaml:/app/logging_config.yaml:ro
+
+    # Working directory
+    working_dir: /app
+
+    # Command to run
+    # Override this with: docker-compose run pyats-layer1 <your-command>
+    command: >
+      bash -c "
+        echo 'pyATS Layer 1 Validation Container';
+        echo '===================================';
+        echo '';
+        echo 'To run tests, use:';
+        echo '  pyats run job layer1_job.py --testbed testbed.yaml --html-logs /app/reports/';
+        echo '';
+        echo 'Or exit and use:';
+        echo '  docker-compose run pyats-layer1 pyats run job layer1_job.py --testbed testbed.yaml';
+        echo '';
+        bash
+      "
+
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+
+    # Network configuration
+    network_mode: bridge
+
+    # Resource limits (optional - adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 1G
+
+# =============================================================================
+# Example Commands
+# =============================================================================
+#
+# Build the image:
+#   docker-compose build
+#
+# Run tests interactively:
+#   docker-compose run --rm pyats-layer1
+#
+# Run tests directly:
+#   docker-compose run --rm pyats-layer1 \
+#     pyats run job layer1_job.py --testbed testbed.yaml --html-logs /app/reports/
+#
+# Run with debug logging:
+#   docker-compose run --rm pyats-layer1 \
+#     pyats run job layer1_job.py --testbed testbed.yaml --loglevel DEBUG
+#
+# Run and generate both HTML and JSON reports:
+#   docker-compose run --rm pyats-layer1 \
+#     pyats run job layer1_job.py --testbed testbed.yaml \
+#     --html-logs /app/reports/ --json-logs /app/reports/
+#
+# =============================================================================

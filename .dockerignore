@@ -1,0 +1,67 @@
+# =============================================================================
+# Docker Ignore File - Excludes files from Docker build context
+# =============================================================================
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation
+README.md
+SAMPLE_OUTPUT.md
+*.md
+!requirements.txt
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Test results and reports
+reports/
+archive/
+test_results/
+*.log
+*.html
+*.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Secrets
+credentials.yaml
+secrets.yaml
+*.key
+*.pem
+
+# OS files
+Thumbs.db
+._*
+
+# Temporary files
+*.tmp
+*.bak
+tmp/
+temp/
+
+# Docker
+.dockerignore
+docker-compose*.yml

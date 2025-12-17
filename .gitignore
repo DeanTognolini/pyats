@@ -1,0 +1,137 @@
+# =============================================================================
+# pyATS Layer 1 Validation - Git Ignore File
+# =============================================================================
+
+# Environment and Secrets
+# ------------------------
+.env
+*.env
+!.env.example
+credentials.yaml
+secrets.yaml
+*.key
+*.pem
+
+# Python
+# ------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+# --------------------
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+pyats_venv/
+
+# pyATS Specific
+# --------------
+# Test results and logs
+archive/
+*_archive/
+*.log
+*.txt.log
+runinfo/
+.pyats/
+
+# Test reports
+reports/
+test_results/
+*.html
+*.xml
+!requirements.txt
+
+# pyATS job archives
+TaskLog.*
+*.results.json
+*.results.yaml
+
+# IDE and Editors
+# ----------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Jupyter Notebooks
+# -----------------
+.ipynb_checkpoints/
+*.ipynb
+
+# Coverage and Testing
+# --------------------
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Docker
+# ------
+docker-compose.override.yml
+
+# OS Files
+# --------
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Temporary Files
+# ---------------
+*.tmp
+*.bak
+*.swp
+*~.nib
+.cache/
+tmp/
+temp/
+
+# Documentation
+# -------------
+site/
+_build/
+docs/_build/
+
+# Custom Testbed Files (if you want to keep local testbeds private)
+# Uncomment the following lines if needed:
+# testbed.yaml
+# testbed_*.yaml
+# my_testbed.yaml

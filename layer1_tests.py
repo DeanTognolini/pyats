@@ -1,5 +1,8 @@
 from pyats import aetest
 from pyats.topology import loader
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Optical thresholds by SFP type (dBm)
 SFP_THRESHOLDS = {
@@ -93,7 +96,8 @@ class LinkHealth(aetest.Testcase):
 
                 try:
                     parsed = device.parse(f'show controllers optics {intf_name}')
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to parse optics data for {device.name}:{intf_name}: {e}")
                     continue
 
                 intf_data = parsed.get(intf_name, {})
@@ -238,7 +242,8 @@ class LinkHealth(aetest.Testcase):
 
                 try:
                     parsed = device.parse('show cdp neighbors detail')
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to parse CDP data for {device.name}: {e}")
                     link_details.append(f"{device.name}: CDP parse failed")
                     continue
 
