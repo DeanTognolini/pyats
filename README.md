@@ -1,94 +1,65 @@
-# pyATS Layer 1 Network Validation
+# pyATS Network Testing Framework
 
-A comprehensive Layer 1 validation framework built on Cisco pyATS for automated network infrastructure testing. This tool validates physical layer connectivity, optical levels, error counters, speed/duplex settings, MTU configuration, and CDP neighbor relationships across your network topology.
+**A template repository for automated network testing with Cisco pyATS**
 
-## Features
+This is a ready-to-use template for building automated network validation test suites. Clone it for each network project or change you need to test, customize the testbed and tests, and validate your network infrastructure with confidence.
 
-- **Link Status Validation**: Verifies both ends of each link are operationally up
-- **Optical Power Monitoring**: Validates RX power levels against SFP-specific thresholds
-- **Error Detection**: Checks for interface errors (CRC, input/output errors)
-- **Configuration Verification**: Validates speed, duplex, and MTU settings
-- **Topology Validation**: Confirms CDP neighbors match expected topology
-- **Multi-Vendor Support**: Works with IOS, IOS-XE, IOS-XR, NX-OS, ASA, and Junos
-- **Containerized**: Docker support for consistent execution environments
-- **HTML/JSON Reporting**: Generates detailed test reports
+## 🎯 Purpose
 
-## Supported SFP Types
+This template provides a **scalable foundation** for pyATS-based network testing projects. It comes pre-configured with:
 
-| SFP Type | RX Min (dBm) | RX Max (dBm) |
-|----------|--------------|--------------|
-| SFP-10G-SR | -9.5 | 2.0 |
-| SFP-10G-LR | -14.4 | 0.5 |
-| SFP-10G-ER | -15.8 | -1.0 |
-| SFP-1G-SX | -17.0 | 0.0 |
-| SFP-1G-LX | -19.0 | -3.0 |
+- ✅ **Organized structure** for multiple test categories (Layer 1, 2, 3, security, compliance, etc.)
+- ✅ **Example Layer 1 tests** validating physical connectivity, optics, errors, and CDP
+- ✅ **Flexible job runners** to execute single or multiple test suites
+- ✅ **Docker support** for consistent execution environments
+- ✅ **CI/CD automation** with GitHub Actions
+- ✅ **Production-ready configuration** with logging, reporting, and error handling
 
-## Prerequisites
+**Clone this repository for each network project to maintain test code alongside your infrastructure changes.**
 
-- Python 3.11 or higher
-- Network devices accessible via SSH
-- Device credentials with read access to interface and CDP commands
+---
 
-## Quick Start
+## 🚀 Quick Start
 
-### Local Installation
+### 1. Clone the Template
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd pyats
-   ```
+```bash
+git clone <this-repo-url> my-network-project
+cd my-network-project
+```
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. Install Dependencies
 
-3. **Configure environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your credentials
-   export PYATS_USERNAME="your-username"
-   export PYATS_PASSWORD="your-password"
-   ```
+```bash
+# Create virtual environment (recommended)
+python3 -m venv venv
+source venv/bin/activate
 
-4. **Configure your testbed**
+# Install pyATS and dependencies
+pip install -r requirements.txt
+```
 
-   Edit `testbed.yaml` to define your network devices and topology. See [Testbed Configuration](#testbed-configuration) below.
+### 3. Configure Credentials
 
-5. **Run the tests**
-   ```bash
-   pyats run job layer1_job.py --testbed testbed.yaml
-   ```
+```bash
+# Copy environment template
+cp .env.example .env
 
-### Docker Installation
+# Edit with your credentials
+vim .env
 
-1. **Build the image**
-   ```bash
-   docker build -t pyats-layer1 .
-   ```
+# Load environment variables
+export $(cat .env | xargs)
+```
 
-2. **Run tests in container**
-   ```bash
-   docker run -it --rm \
-     -v $(pwd)/testbed.yaml:/app/testbed.yaml \
-     -v $(pwd)/reports:/app/reports \
-     -e PYATS_USERNAME="your-username" \
-     -e PYATS_PASSWORD="your-password" \
-     pyats-layer1 \
-     pyats run job layer1_job.py --testbed testbed.yaml --html-logs reports/
-   ```
+### 4. Configure Your Network
 
-## Testbed Configuration
-
-The `testbed.yaml` file defines your network topology. Here's the structure:
-
-### Device Definition
+Edit `testbeds/testbed.yaml` with your device details:
 
 ```yaml
 devices:
   router1:
-    os: iosxe                    # Device OS: ios, iosxe, iosxr, nxos, asa, junos
+    os: iosxe
     type: router
     credentials:
       default:
@@ -99,238 +70,416 @@ devices:
         class: unicon.Unicon
       cli:
         protocol: ssh
-        ip: 192.168.1.1          # Management IP
-        port: 22
-        # For legacy devices with older SSH algorithms:
-        # ssh_options: -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa
-```
+        ip: 192.168.1.1
 
-### Topology Definition
-
-```yaml
 topology:
   router1:
     interfaces:
       GigabitEthernet1:
-        type: ethernet
-        link: router1-router2    # Link name (must match on both ends)
-        speed: 1000              # Expected speed in Mbps (optional)
-        duplex: full             # Expected duplex: full/half (optional)
-        mtu: 1500                # Expected MTU (optional)
-        sfp_type: SFP-10G-SR     # SFP type for optical checks (optional)
+        link: router1-router2
+        speed: 1000
+        duplex: full
 ```
 
-**Important**: The `link` name must be identical on both sides of a connection to create a link relationship.
+### 5. Run Tests
 
-## Usage Examples
-
-### Run all tests
 ```bash
-pyats run job layer1_job.py --testbed testbed.yaml
+# Run all test suites
+pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs ./reports/
+
+# Run specific test suite (Layer 1)
+pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs ./reports/
+
+# View reports
+open reports/TaskLog.html
 ```
 
-### Run with HTML report
-```bash
-pyats run job layer1_job.py --testbed testbed.yaml --html-logs ./reports/
-```
+---
 
-### Run with JSON output
-```bash
-pyats run job layer1_job.py --testbed testbed.yaml --json-logs ./reports/
-```
-
-### Run specific test case
-```bash
-python layer1_tests.py --testbed testbed.yaml
-```
-
-### Debug mode
-```bash
-pyats run job layer1_job.py --testbed testbed.yaml --loglevel DEBUG
-```
-
-## Test Cases
-
-### 1. Link Status Check
-- **Purpose**: Verify all links are operationally up
-- **Criteria**: Both ends must show status "up" and line protocol "up"
-- **Failure Example**: `router1-router2: router1:Gi1 is up/down`
-
-### 2. Optical Levels Check
-- **Purpose**: Validate RX power within acceptable thresholds
-- **Criteria**: RX power must be within min/max range for the SFP type
-- **Failure Example**: `router1-router2: router1:Gi1 RX -12.3 dBm (expected -9.5 to 2.0)`
-- **Note**: Only runs on interfaces with `sfp_type` defined
-
-### 3. Interface Errors Check
-- **Purpose**: Detect any interface errors
-- **Criteria**: Zero input errors, output errors, and CRC errors
-- **Failure Example**: `router1-router2: router1:Gi1 [45 in, 12 CRC]`
-
-### 4. Speed/Duplex Check
-- **Purpose**: Verify speed and duplex match expected values
-- **Criteria**: Actual values must match topology definition
-- **Failure Example**: `router1-router2: router1:Gi1 [speed 100 != 1000]`
-- **Note**: Only runs on interfaces with `speed` or `duplex` defined
-
-### 5. MTU Check
-- **Purpose**: Verify MTU matches expected value
-- **Criteria**: Actual MTU must match topology definition
-- **Failure Example**: `router1-router2: router1:Gi1 MTU 1400 != 1500`
-- **Note**: Only runs on interfaces with `mtu` defined
-
-### 6. CDP Check
-- **Purpose**: Validate CDP neighbors match topology
-- **Criteria**: CDP neighbor device and port must match expected topology
-- **Failure Example**: `router1-router2: router1:Gi1 CDP neighbor sw1 != router2`
-- **Note**: Only runs on point-to-point links (2 interfaces)
-
-## Understanding Test Results
-
-### Pass Example
-```
-2025-12-17T12:00:00: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:00: %AETEST-INFO: |                          Starting section setup                           |
-2025-12-17T12:00:00: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:00: %AETEST-INFO: The result of section setup is => PASSED
-
-2025-12-17T12:00:01: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:01: %AETEST-INFO: |                      Starting test check_link_status                      |
-2025-12-17T12:00:01: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:05: %AETEST-INFO: Passed reason: All 2 links are up/up
-2025-12-17T12:00:05: %AETEST-INFO: The result of test check_link_status is => PASSED
-```
-
-### Failure Example
-```
-2025-12-17T12:00:10: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:10: %AETEST-INFO: |                   Starting test check_link_optical_levels                 |
-2025-12-17T12:00:10: %AETEST-INFO: +------------------------------------------------------------------------------+
-2025-12-17T12:00:15: %AETEST-ERROR: Failed reason: Optical levels out of range: router1-router2: router1:GigabitEthernet1 RX -12.5 dBm (expected -9.5 to 2.0)
-2025-12-17T12:00:15: %AETEST-INFO: The result of test check_link_optical_levels is => FAILED
-```
-
-## CI/CD Integration
-
-This repository includes GitHub Actions workflows for automated testing:
-
-- **PR Validation**: Runs on all pull requests to validate changes
-- **Scheduled Testing**: Can run on a schedule for continuous monitoring
-- **Test Reports**: Generates and uploads HTML reports as artifacts
-
-See `.github/workflows/pyats-validation.yml` for configuration.
-
-## Project Structure
+## 📁 Repository Structure
 
 ```
 .
-├── layer1_job.py           # pyATS job file (entry point)
-├── layer1_tests.py         # Test suite with all validation logic
-├── testbed.yaml            # Network topology definition
-├── requirements.txt        # Python dependencies
-├── Dockerfile              # Container definition
-├── .env.example            # Environment variable template
-├── .gitignore              # Git ignore patterns
-├── logging_config.yaml     # Logging configuration
-└── reports/                # Test reports directory (created at runtime)
+├── jobs/                       # Job orchestration files
+│   ├── run_all.py             # Execute all test suites
+│   └── run_layer1.py          # Execute Layer 1 tests
+│
+├── tests/                      # Test suites by category
+│   ├── layer1/                # Physical layer validation
+│   │   ├── test_layer1.py     # Link status, optics, errors, CDP
+│   │   └── __init__.py
+│   ├── layer2/                # Data link layer (placeholder)
+│   │   └── README.md          # Guide for adding L2 tests
+│   └── layer3/                # Network layer (placeholder)
+│       └── README.md          # Guide for adding L3 tests
+│
+├── testbeds/                   # Network topology definitions
+│   ├── testbed.yaml           # Example testbed
+│   └── README.md
+│
+├── configs/                    # Configuration files
+│   └── logging_config.yaml    # Logging configuration
+│
+├── reports/                    # Test reports (generated)
+├── archive/                    # pyATS archives (generated)
+├── logs/                       # Log files (generated)
+│
+├── .github/workflows/          # CI/CD automation
+├── Dockerfile                  # Container definition
+├── docker-compose.yml          # Compose configuration
+├── requirements.txt            # Python dependencies
+├── .env.example                # Environment template
+├── README.md                   # This file
+├── TEMPLATE_USAGE.md           # Detailed usage guide
+└── SAMPLE_OUTPUT.md            # Example test outputs
 ```
 
-## Troubleshooting
+---
 
-### Connection Issues
+## 📋 Included Test Suites
 
-**Problem**: `ConnectionError: Failed to connect to device`
+### Layer 1 Validation (Included)
 
-**Solutions**:
-- Verify IP address and port in testbed.yaml
-- Check network connectivity: `ping <device-ip>`
-- Verify SSH is enabled on the device
-- Check credentials are correct
-- For legacy devices, add SSH options (see testbed.yaml template)
+The template includes a complete Layer 1 test suite (`tests/layer1/test_layer1.py`) that validates:
 
-### Parser Errors
+| Test | Description | Failure Example |
+|------|-------------|----------------|
+| **Link Status** | Verifies interfaces are up/up | `router1:Gi1 is up/down` |
+| **Optical Levels** | Validates RX power within SFP thresholds | `RX -12.5 dBm (expected -9.5 to 2.0)` |
+| **Interface Errors** | Checks for CRC, input, output errors | `[245 in, 45 CRC]` |
+| **Speed/Duplex** | Validates configuration matches expected | `speed 100 != 1000` |
+| **MTU** | Verifies MTU settings | `MTU 1400 != 1500` |
+| **CDP Neighbors** | Confirms topology matches expectations | `CDP neighbor sw1 != router2` |
 
-**Problem**: `ParserNotFound: Could not find parser for command`
+**Supported SFP Types:**
+- SFP-10G-SR, SFP-10G-LR, SFP-10G-ER
+- SFP-1G-SX, SFP-1G-LX
 
-**Solutions**:
-- Verify the OS type is correct in testbed.yaml
-- Update pyATS to the latest version: `pip install -U pyats[full]`
-- Check device is running a supported OS version
+### Layer 2 & Layer 3 (Placeholders)
 
-### Authentication Failures
+The `tests/layer2/` and `tests/layer3/` directories include README files with:
+- Suggested test cases (VLANs, STP, BGP, OSPF, etc.)
+- Code examples and patterns
+- Getting started guides
 
-**Problem**: `Authentication failed`
+**Add your own tests following these patterns!**
 
-**Solutions**:
-- Verify environment variables are set: `echo $PYATS_USERNAME`
-- Check credentials have proper permissions
-- Try connecting manually via SSH to verify credentials
+---
 
-### Missing Optical Data
+## 🐳 Docker Usage
 
-**Problem**: Tests skip optical checks even with `sfp_type` defined
-
-**Solutions**:
-- Verify the command `show controllers optics <interface>` works on your device
-- Some devices use different commands - check pyATS parser support
-- Ensure the interface actually has an SFP installed
-
-## Advanced Configuration
-
-### Custom Logging
-
-Edit `logging_config.yaml` to customize log levels and formats:
-
-```yaml
-loggers:
-  pyats:
-    level: INFO
-  unicon:
-    level: WARNING
-```
-
-### Parallel Execution
-
-Run tests across multiple devices in parallel:
+### Build Image
 
 ```bash
-pyats run job layer1_job.py --testbed testbed.yaml --max-workers 5
+docker build -t pyats-network-tests .
 ```
 
-### Custom Thresholds
+### Run Tests in Container
 
-To modify optical thresholds, edit `SFP_THRESHOLDS` in `layer1_tests.py`:
+```bash
+# Interactive mode
+docker run -it --rm \
+  -v $(pwd)/testbeds:/app/testbeds:ro \
+  -v $(pwd)/reports:/app/reports \
+  -e PYATS_USERNAME="${PYATS_USERNAME}" \
+  -e PYATS_PASSWORD="${PYATS_PASSWORD}" \
+  pyats-network-tests
+
+# Direct execution
+docker run --rm \
+  -v $(pwd)/testbeds:/app/testbeds:ro \
+  -v $(pwd)/reports:/app/reports \
+  -e PYATS_USERNAME="${PYATS_USERNAME}" \
+  -e PYATS_PASSWORD="${PYATS_PASSWORD}" \
+  pyats-network-tests \
+  pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
+```
+
+### Docker Compose
+
+```bash
+# Run interactively
+docker-compose run --rm pyats-tests
+
+# Run all tests
+docker-compose run --rm pyats-tests \
+  pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
+```
+
+---
+
+## 🔧 Adding Your Own Tests
+
+### Example: Adding BGP Validation
+
+1. **Create test file** (`tests/layer3/test_bgp.py`):
 
 ```python
-SFP_THRESHOLDS = {
-    'CUSTOM-SFP': {'rx_min': -10.0, 'rx_max': 3.0},
-}
+from pyats import aetest
+
+class BGPValidation(aetest.Testcase):
+    @aetest.test
+    def check_bgp_neighbors(self, testbed):
+        failed = []
+        for device in testbed.devices.values():
+            device.connect(log_stdout=False)
+            bgp = device.parse('show bgp summary')
+
+            for neighbor, data in bgp['neighbor'].items():
+                if data['state'] != 'Established':
+                    failed.append(f"{device.name}: {neighbor} state is {data['state']}")
+
+        if failed:
+            self.failed(f"BGP neighbors down: {'; '.join(failed)}")
+        else:
+            self.passed("All BGP neighbors Established")
 ```
 
-## Contributing
+2. **Create job file** (`jobs/run_bgp.py`):
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-new-feature`
-3. Make your changes and add tests
-4. Run the test suite to ensure everything passes
-5. Commit your changes: `git commit -am 'Add new feature'`
-6. Push to the branch: `git push origin feature/my-new-feature`
-7. Submit a pull request
+```python
+from pyats.easypy import run
 
-## License
+def main(runtime):
+    runtime.job.name = 'BGP Validation'
+    run(testscript='tests/layer3/test_bgp.py', runtime=runtime)
+```
 
-See LICENSE file for details.
+3. **Run your tests**:
 
-## Resources
+```bash
+# Run BGP tests specifically
+pyats run job jobs/run_bgp.py --testbed testbeds/testbed.yaml
+
+# Or run all tests (auto-discovers your new test)
+pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml
+```
+
+**See [TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md) for more examples and patterns.**
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Set in `.env` file:
+
+```bash
+# Required
+PYATS_USERNAME=admin
+PYATS_PASSWORD=your-password
+
+# Optional
+PYATS_LOG_LEVEL=INFO
+PYATS_REPORT_DIR=./reports
+PYATS_HTML_REPORTS=true
+PYATS_JSON_REPORTS=false
+PYATS_TEST_SUITES=layer1,layer3  # Specific suites for run_all.py
+```
+
+### Testbed Configuration
+
+The testbed YAML defines:
+- **Devices**: Connection details, OS type, credentials
+- **Topology**: Interface mappings, links, expected configurations
+- **Custom Attributes**: SFP types, speed/duplex, MTU, etc.
+
+See `testbeds/README.md` and official docs: https://pubhub.devnetcloud.com/media/pyats-getting-started/docs/quickstart/manageconnections.html
+
+---
+
+## 📊 Test Reports
+
+### HTML Reports
+
+Generate with `--html-logs`:
+
+```bash
+pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs ./reports/
+```
+
+Features:
+- Interactive web interface
+- Expandable test details
+- Device connection logs
+- Searchable and filterable
+- Direct links to failures
+
+### JSON Reports
+
+Generate with `--json-logs` for programmatic parsing:
+
+```bash
+pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --json-logs ./reports/
+```
+
+See [SAMPLE_OUTPUT.md](./SAMPLE_OUTPUT.md) for examples of test outputs and report structures.
+
+---
+
+## 🔄 CI/CD Integration
+
+The included GitHub Actions workflow (`.github/workflows/pyats-validation.yml`) provides:
+
+- ✅ **Code linting** (flake8, pylint, black)
+- ✅ **YAML validation** (testbeds, configs)
+- ✅ **Docker build testing**
+- ✅ **Syntax validation** for all tests
+- ✅ **Security scanning** (safety, bandit)
+
+Runs automatically on PRs and pushes to main.
+
+**Optional**: Uncomment the `network-testing` job to run actual tests against network devices (requires secrets configuration).
+
+---
+
+## 🎓 Use Cases
+
+### 1. Pre-Change Validation
+
+```bash
+# Before network change
+pyats run job jobs/run_all.py --testbed testbeds/production.yaml \
+  --html-logs ./reports/pre-change/
+
+# Make your change
+
+# After network change
+pyats run job jobs/run_all.py --testbed testbeds/production.yaml \
+  --html-logs ./reports/post-change/
+
+# Compare results
+```
+
+### 2. Continuous Monitoring
+
+Run tests on a schedule (cron, systemd timer, etc.) to detect drift:
+
+```bash
+0 */6 * * * cd /path/to/tests && pyats run job jobs/run_all.py \
+  --testbed testbeds/production.yaml --html-logs ./reports/$(date +\%Y\%m\%d-\%H\%M)/
+```
+
+### 3. Project-Specific Testing
+
+Clone this template for each project:
+
+```bash
+# Project 1: Data center migration
+git clone <template> dc-migration-tests
+cd dc-migration-tests
+# Add migration-specific tests
+
+# Project 2: Branch upgrade
+git clone <template> branch-upgrade-tests
+cd branch-upgrade-tests
+# Add upgrade validation tests
+```
+
+### 4. Multi-Vendor Networks
+
+```bash
+# Create testbeds for different vendors
+testbeds/
+  ├── cisco-core.yaml
+  ├── arista-leaf.yaml
+  └── juniper-edge.yaml
+
+# Run against all
+for tb in testbeds/*.yaml; do
+  pyats run job jobs/run_all.py --testbed $tb --html-logs ./reports/$(basename $tb .yaml)/
+done
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### Connection Issues
+- **Problem**: Can't connect to devices
+- **Solution**: Check IP/port, verify credentials, ensure SSH is enabled, test with `ssh user@device`
+
+### Parser Errors
+- **Problem**: `ParserNotFound` errors
+- **Solution**: Verify OS type in testbed matches device, update pyATS: `pip install -U pyats[full]`
+
+### Missing Test Discovery
+- **Problem**: `run_all.py` doesn't find tests
+- **Solution**: Ensure files match pattern `tests/*/test_*.py` and have proper Python syntax
+
+### Docker Networking
+- **Problem**: Container can't reach network devices
+- **Solution**: Use host networking: `docker run --network host ...`
+
+See [TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md#troubleshooting) for more troubleshooting tips.
+
+---
+
+## 📚 Documentation
+
+- **[TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md)** - Comprehensive guide for using this template
+- **[SAMPLE_OUTPUT.md](./SAMPLE_OUTPUT.md)** - Example test outputs and reports
+- **[testbeds/README.md](./testbeds/README.md)** - Testbed configuration guide
+- **[tests/layer2/README.md](./tests/layer2/README.md)** - Layer 2 test ideas
+- **[tests/layer3/README.md](./tests/layer3/README.md)** - Layer 3 test ideas
+
+### External Resources
 
 - [pyATS Documentation](https://developer.cisco.com/docs/pyats/)
-- [pyATS Getting Started Guide](https://pubhub.devnetcloud.com/media/pyats-getting-started/docs/)
-- [Genie Parser Documentation](https://pubhub.devnetcloud.com/media/genie-feature-browser/docs/)
-- [Unicon Connection Library](https://developer.cisco.com/docs/unicon/)
+- [pyATS Getting Started](https://pubhub.devnetcloud.com/media/pyats-getting-started/docs/)
+- [Genie Parser Library](https://pubhub.devnetcloud.com/media/genie-feature-browser/docs/)
+- [pyATS Community Forum](https://community.cisco.com/t5/pyats/bd-p/5672j-disc-pyats)
 
-## Support
+---
 
-For issues and questions:
-- Open an issue on GitHub
-- Check existing issues for solutions
-- Review the pyATS community forums
+## 🤝 Contributing
+
+This is a template repository - fork it and customize for your needs!
+
+If you develop useful test patterns or improvements:
+1. Keep your project-specific code in your fork
+2. Consider contributing generic improvements back to the template
+3. Share your experiences with the community
+
+---
+
+## 📝 License
+
+See [LICENSE](./LICENSE) file for details.
+
+---
+
+## ✨ Features Summary
+
+| Feature | Status |
+|---------|--------|
+| Layer 1 Tests | ✅ Included |
+| Layer 2 Tests | 📝 Placeholder |
+| Layer 3 Tests | 📝 Placeholder |
+| Multi-vendor Support | ✅ Yes (IOS, XE, XR, NXOS, ASA, Junos) |
+| Docker Support | ✅ Included |
+| CI/CD Pipeline | ✅ GitHub Actions |
+| HTML Reports | ✅ Included |
+| JSON Reports | ✅ Included |
+| Logging Configuration | ✅ Included |
+| Environment Management | ✅ .env support |
+| Documentation | ✅ Comprehensive |
+
+---
+
+## 🚦 Getting Started Checklist
+
+- [ ] Clone this template for your project
+- [ ] Install dependencies: `pip install -r requirements.txt`
+- [ ] Configure credentials in `.env`
+- [ ] Update `testbeds/testbed.yaml` with your devices
+- [ ] Run example Layer 1 tests
+- [ ] Review test results in HTML report
+- [ ] Add your own test suites
+- [ ] Integrate with your change management process
+- [ ] Configure CI/CD for your repository
+
+**Ready to validate your network? Let's go! 🚀**
+
+For detailed instructions, see [TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md).

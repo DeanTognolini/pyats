@@ -3,19 +3,19 @@ pyATS Job File for Layer 1 Validation
 
 Usage:
   Basic:
-    pyats run job layer1_job.py --testbed testbed.yaml
+    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml
 
   With HTML reports:
-    pyats run job layer1_job.py --testbed testbed.yaml --html-logs ./reports/
+    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs ./reports/
 
   With JSON reports:
-    pyats run job layer1_job.py --testbed testbed.yaml --json-logs ./reports/
+    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --json-logs ./reports/
 
   With both reports:
-    pyats run job layer1_job.py --testbed testbed.yaml --html-logs ./reports/ --json-logs ./reports/
+    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs ./reports/ --json-logs ./reports/
 
   Debug mode:
-    pyats run job layer1_job.py --testbed testbed.yaml --loglevel DEBUG
+    pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --loglevel DEBUG
 """
 
 from pyats.easypy import run
@@ -49,6 +49,6 @@ def main(runtime):
 
     # Run the test script
     run(
-        testscript='layer1_tests.py',
+        testscript='tests/layer1/test_layer1.py',
         runtime=runtime,
     )

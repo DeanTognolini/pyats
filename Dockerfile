@@ -1,18 +1,18 @@
 # =============================================================================
-# pyATS Layer 1 Validation Docker Image
+# pyATS Network Testing Framework Docker Image
 # =============================================================================
 #
 # Build:
-#   docker build -t pyats-layer1 .
+#   docker build -t pyats-network-tests .
 #
 # Run with volume mounts:
 #   docker run -it --rm \
-#     -v $(pwd)/testbed.yaml:/app/testbed.yaml:ro \
+#     -v $(pwd)/testbeds:/app/testbeds:ro \
 #     -v $(pwd)/reports:/app/reports \
 #     -e PYATS_USERNAME="admin" \
 #     -e PYATS_PASSWORD="password" \
-#     pyats-layer1 \
-#     pyats run job layer1_job.py --testbed testbed.yaml --html-logs /app/reports/
+#     pyats-network-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
 #
 # =============================================================================
 
@@ -20,8 +20,8 @@
 FROM python:3.11-slim
 
 # Set metadata
-LABEL maintainer="pyats-layer1"
-LABEL description="pyATS Layer 1 Network Validation Framework"
+LABEL maintainer="pyats-network-tests"
+LABEL description="pyATS Network Testing Framework - Template Repository"
 LABEL version="1.0"
 
 # Set working directory
@@ -46,11 +46,13 @@ RUN apt-get update && \
 RUN mkdir -p /app/reports /app/archive /app/logs && \
     chmod 777 /app/reports /app/archive /app/logs
 
-# Copy application code
-COPY layer1_job.py layer1_tests.py ./
+# Copy application structure
+COPY jobs/ ./jobs/
+COPY tests/ ./tests/
+COPY configs/ ./configs/
 
-# Copy sample testbed (will be overridden by volume mount in production)
-COPY testbed.yaml ./testbed.yaml.example
+# Copy sample testbeds (will be overridden by volume mount in production)
+COPY testbeds/ ./testbeds/
 
 # Set environment variables with sensible defaults
 ENV PYATS_LOG_LEVEL=INFO \
@@ -58,8 +60,8 @@ ENV PYATS_LOG_LEVEL=INFO \
     PYTHONUNBUFFERED=1
 
 # Define volume mount points
-# These allow users to mount their own testbed and preserve reports
-VOLUME ["/app/testbed.yaml", "/app/reports", "/app/archive"]
+# These allow users to mount their own testbeds and preserve reports
+VOLUME ["/app/testbeds", "/app/reports", "/app/archive"]
 
 # Health check (optional - verifies Python and pyATS are working)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -72,23 +74,31 @@ CMD ["bash"]
 # Common usage examples (for reference):
 #
 # Interactive mode:
-#   docker run -it --rm pyats-layer1
+#   docker run -it --rm pyats-network-tests
 #
-# Run tests with mounted testbed:
+# Run all test suites:
 #   docker run --rm \
-#     -v $(pwd)/testbed.yaml:/app/testbed.yaml:ro \
+#     -v $(pwd)/testbeds:/app/testbeds:ro \
 #     -v $(pwd)/reports:/app/reports \
 #     -e PYATS_USERNAME="${PYATS_USERNAME}" \
 #     -e PYATS_PASSWORD="${PYATS_PASSWORD}" \
-#     pyats-layer1 \
-#     pyats run job layer1_job.py --testbed testbed.yaml --html-logs /app/reports/
+#     pyats-network-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
+#
+# Run specific test suite (Layer 1):
+#   docker run --rm \
+#     -v $(pwd)/testbeds:/app/testbeds:ro \
+#     -v $(pwd)/reports:/app/reports \
+#     -e PYATS_USERNAME="${PYATS_USERNAME}" \
+#     -e PYATS_PASSWORD="${PYATS_PASSWORD}" \
+#     pyats-network-tests \
+#     pyats run job jobs/run_layer1.py --testbed testbeds/testbed.yaml --html-logs /app/reports/
 #
 # Run with custom log level:
 #   docker run --rm \
-#     -v $(pwd)/testbed.yaml:/app/testbed.yaml:ro \
+#     -v $(pwd)/testbeds:/app/testbeds:ro \
 #     -v $(pwd)/reports:/app/reports \
 #     -e PYATS_USERNAME="${PYATS_USERNAME}" \
 #     -e PYATS_PASSWORD="${PYATS_PASSWORD}" \
-#     pyats-layer1 \
-#     pyats run job layer1_job.py --testbed testbed.yaml --loglevel DEBUG
-
+#     pyats-network-tests \
+#     pyats run job jobs/run_all.py --testbed testbeds/testbed.yaml --loglevel DEBUG
