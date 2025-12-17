@@ -32,6 +32,9 @@ Usage:
 from pyats.easypy import run
 import os
 import glob
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def main(runtime):
@@ -76,20 +79,20 @@ def main(runtime):
         test_scripts = glob.glob('tests/*/test_*.py')
 
     if not test_scripts:
-        runtime.log.warning('No test scripts found!')
-        runtime.log.warning('Make sure your test files follow the pattern: tests/<category>/test_*.py')
+        logger.warning('No test scripts found!')
+        logger.warning('Make sure your test files follow the pattern: tests/<category>/test_*.py')
         return
 
-    runtime.log.info(f'Found {len(test_scripts)} test suite(s) to execute:')
+    logger.info(f'Found {len(test_scripts)} test suite(s) to execute:')
     for script in sorted(test_scripts):
-        runtime.log.info(f'  - {script}')
+        logger.info(f'  - {script}')
 
     # Execute each test suite
     for testscript in sorted(test_scripts):
         # Extract test suite name for better logging
         suite_name = testscript.split('/')[-2] if '/' in testscript else 'unknown'
 
-        runtime.log.info(f'Executing {suite_name} test suite...')
+        logger.info(f'Executing {suite_name} test suite...')
 
         run(
             testscript=testscript,
@@ -97,4 +100,4 @@ def main(runtime):
             taskid=f'{suite_name}_tests'
         )
 
-    runtime.log.info('All test suites completed!')
+    logger.info('All test suites completed!')
