@@ -1,0 +1,123 @@
+# =============================================================================
+# pyATS Testbed Template
+# =============================================================================
+#
+# DEVICE TEMPLATE:
+# ----------------
+#   <device-hostname>:
+#     os: [ios|iosxe|iosxr|nxos|asa|junos]
+#     type: router
+#     credentials:
+#       default:
+#         username: '%ENV{PYATS_USERNAME}'
+#         password: '%ENV{PYATS_PASSWORD}'
+#     connections:
+#       defaults:
+#         class: unicon.Unicon
+#       cli:
+#         protocol: ssh
+#         ip: <management-ip>
+#         port: 22
+#         # Optional for legacy devices:
+#         # ssh_options: -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa
+#
+# TOPOLOGY TEMPLATE:
+# ------------------
+#   <device-hostname>:
+#     interfaces:
+#       <interface-name>:
+#         type: ethernet
+#         link: <link-name>        # Same on both ends to create a link
+#         speed: 1000              # Expected speed in Mbps
+#         duplex: full             # Expected duplex
+#         mtu: 1500                # Expected MTU
+#         sfp_type: SFP-10G-SR     # Optional: for optical threshold checks
+#
+# SUPPORTED SFP TYPES:
+# --------------------
+#   SFP-10G-SR, SFP-10G-LR, SFP-10G-ER
+#   SFP-1G-SX, SFP-1G-LX
+#   QSFP-40G-SR4, QSFP-100G-SR4
+#
+# =============================================================================
+
+devices:
+  router1:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: '%ENV{PYATS_USERNAME}'
+        password: '%ENV{PYATS_PASSWORD}'
+    connections:
+      defaults:
+        class: unicon.Unicon
+      cli:
+        protocol: ssh
+        ip: 192.168.1.1
+        port: 22
+
+  router2:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: '%ENV{PYATS_USERNAME}'
+        password: '%ENV{PYATS_PASSWORD}'
+    connections:
+      defaults:
+        class: unicon.Unicon
+      cli:
+        protocol: ssh
+        ip: 192.168.1.2
+        port: 22
+
+  legacy-router:
+    os: ios
+    type: router
+    credentials:
+      default:
+        username: '%ENV{PYATS_USERNAME}'
+        password: '%ENV{PYATS_PASSWORD}'
+    connections:
+      defaults:
+        class: unicon.Unicon
+      cli:
+        protocol: ssh
+        ip: 192.168.1.3
+        port: 22
+        ssh_options: -o KexAlgorithms=+diffie-hellman-group1-sha1 -o HostKeyAlgorithms=+ssh-rsa
+
+topology:
+  router1:
+    interfaces:
+      GigabitEthernet1:
+        type: ethernet
+        link: router1-router2
+        speed: 1000
+        duplex: full
+        mtu: 1500
+      GigabitEthernet2:
+        type: ethernet
+        link: router1-legacy
+        speed: 1000
+        duplex: full
+        mtu: 1500
+
+  router2:
+    interfaces:
+      GigabitEthernet1:
+        type: ethernet
+        link: router1-router2
+        speed: 1000
+        duplex: full
+        mtu: 1500
+
+  legacy-router:
+    interfaces:
+      GigabitEthernet0/0:
+        type: ethernet
+        link: router1-legacy
+        speed: 1000
+        duplex: full
+        mtu: 1500

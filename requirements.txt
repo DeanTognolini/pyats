@@ -1,0 +1,2 @@
+telnetlib-313-and-up
+pyats[full]
