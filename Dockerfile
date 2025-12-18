@@ -17,7 +17,8 @@
 # =============================================================================
 
 # Use a specific Python version for reproducibility
-FROM python:3.11-slim
+# Using full image instead of slim to support pyats[full] dependencies
+FROM python:3.11
 
 # Set metadata
 LABEL maintainer="pyats-network-tests"
@@ -30,16 +31,27 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install system dependencies and Python packages
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         iputils-ping \
         openssh-client \
         git \
         vim \
-        less && \
+        less \
+        gcc \
+        g++ \
+        make \
+        libffi-dev \
+        libssl-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        zlib1g-dev && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python packages separately for better error visibility
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # Create directories for volume mounts
