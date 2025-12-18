@@ -1,0 +1,202 @@
+# =============================================================================
+# MPLS Core Network Testbed Example
+# =============================================================================
+#
+# This testbed demonstrates how to configure devices for MPLS core testing.
+# Copy this file and customize it for your MPLS network.
+#
+# REQUIRED CUSTOM ATTRIBUTES FOR MPLS TESTING:
+# ---------------------------------------------
+#   mpls_role:          Device role in MPLS network (P, PE, or P-PE)
+#   loopback0_ip:       Loopback0 IP address (for connectivity testing)
+#   ldp_neighbors:      List of expected LDP neighbor router IDs
+#   ospf_neighbors:     List of expected OSPF neighbor IP addresses
+#   critical_prefixes:  (Optional) Prefixes that must have MPLS labels
+#   critical_lsps:      (Optional) LSP destinations that must be established
+#
+# =============================================================================
+
+testbed:
+  name: MPLS_Core_Network
+
+  credentials:
+    default:
+      username: "%ENV{PYATS_USERNAME}"
+      password: "%ENV{PYATS_PASSWORD}"
+    enable:
+      password: "%ENV{PYATS_ENABLE_PASSWORD,}"
+
+devices:
+  # Provider Edge Router 1
+  PE1:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.1
+        port: 22
+
+    custom:
+      # MPLS role (P, PE, or P-PE)
+      mpls_role: PE
+
+      # Loopback IP for reachability testing
+      loopback0_ip: 10.0.0.1/32
+
+      # Expected LDP neighbors (router IDs)
+      ldp_neighbors:
+        - 10.0.0.2      # P1
+        - 10.0.0.3      # P2
+
+      # Expected OSPF neighbors (neighbor IPs)
+      ospf_neighbors:
+        - 192.168.1.2   # P1 on Gi0/0
+        - 192.168.2.2   # P2 on Gi0/1
+
+      # Critical prefixes that must have MPLS labels (optional)
+      critical_prefixes:
+        - 10.0.0.0/24   # Loopback subnet
+        - 172.16.0.0/16 # Customer VPN routes
+
+      # Critical LSP destinations (optional)
+      critical_lsps:
+        - 10.0.0.4      # PE2 loopback
+        - 10.0.0.5      # PE3 loopback
+
+  # Provider Router 1 (Core)
+  P1:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.2
+        port: 22
+
+    custom:
+      mpls_role: P
+      loopback0_ip: 10.0.0.2/32
+
+      ldp_neighbors:
+        - 10.0.0.1      # PE1
+        - 10.0.0.3      # P2
+        - 10.0.0.4      # PE2
+
+      ospf_neighbors:
+        - 192.168.1.1   # PE1
+        - 192.168.3.2   # P2
+        - 192.168.4.2   # PE2
+
+  # Provider Router 2 (Core)
+  P2:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.3
+        port: 22
+
+    custom:
+      mpls_role: P
+      loopback0_ip: 10.0.0.3/32
+
+      ldp_neighbors:
+        - 10.0.0.1      # PE1
+        - 10.0.0.2      # P1
+        - 10.0.0.5      # PE3
+
+      ospf_neighbors:
+        - 192.168.2.1   # PE1
+        - 192.168.3.1   # P1
+        - 192.168.5.2   # PE3
+
+  # Provider Edge Router 2
+  PE2:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.4
+        port: 22
+
+    custom:
+      mpls_role: PE
+      loopback0_ip: 10.0.0.4/32
+
+      ldp_neighbors:
+        - 10.0.0.2      # P1
+
+      ospf_neighbors:
+        - 192.168.4.1   # P1
+
+      critical_lsps:
+        - 10.0.0.1      # PE1 loopback
+        - 10.0.0.5      # PE3 loopback
+
+  # Provider Edge Router 3
+  PE3:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.5
+        port: 22
+
+    custom:
+      mpls_role: PE
+      loopback0_ip: 10.0.0.5/32
+
+      ldp_neighbors:
+        - 10.0.0.3      # P2
+
+      ospf_neighbors:
+        - 192.168.5.1   # P2
+
+      critical_lsps:
+        - 10.0.0.1      # PE1 loopback
+        - 10.0.0.4      # PE2 loopback
+
+# =============================================================================
+# TOPOLOGY (Optional - for documentation)
+# =============================================================================
+#
+# Network Topology:
+#
+#                   PE1 (10.0.0.1)
+#                   /  \
+#                  /    \
+#           P1 (10.0.0.2) -- P2 (10.0.0.3)
+#                 |              |
+#                 |              |
+#           PE2 (10.0.0.4)  PE3 (10.0.0.5)
+#
+# Protocols:
+#   - IGP: OSPF Area 0
+#   - MPLS: LDP
+#   - All routers have Loopback0 interfaces advertised in OSPF
+#
+# =============================================================================
