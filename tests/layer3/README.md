@@ -13,6 +13,34 @@ Comprehensive MPLS core network validation including:
 3. **P Router Loopback Connectivity** - Tests reachability to P router loopbacks
 4. **LSP Path Verification** - Validates LSP establishment for critical destinations
 
+### OSPF Health Tests (`test_ospf_health.py`)
+
+Comprehensive OSPF health and parameter validation including:
+
+1. **OspfProcessHealth** - Verifies OSPF process is running and healthy
+   - Process existence and configuration
+   - Router ID validation
+   - SPF timing analysis
+
+2. **OspfNeighborHealth** - Validates OSPF neighbor relationships
+   - Neighbor state verification (FULL state)
+   - Dead timer monitoring
+   - Missing neighbor detection
+
+3. **OspfInterfaceHealth** - Checks OSPF interface status
+   - Interface operational state
+   - Interface cost validation
+   - Expected interface presence
+
+4. **OspfDatabaseHealth** - Validates OSPF database consistency
+   - LSA presence verification
+   - OSPF area validation
+   - Database population check
+
+5. **OspfRouteHealth** - Verifies OSPF routes in routing table
+   - Expected route presence
+   - Minimum route count validation
+
 ## Potential Additional Test Cases
 
 - **Routing Tables**: Verify routing table entries and next-hops
@@ -77,6 +105,57 @@ pyats run job jobs/run_layer3.py --testbed testbeds/mpls_testbed.yaml
 # Run MPLS test directly
 pyats run testscript tests/layer3/test_mpls_core.py --testbed testbeds/mpls_testbed.yaml
 ```
+
+## OSPF Health Test Configuration
+
+### Required Testbed Custom Attributes
+
+For OSPF health tests, devices should have the following custom attributes defined:
+
+```yaml
+devices:
+  CORE1:
+    custom:
+      ospf_enabled: true              # Explicitly mark as OSPF-enabled (optional if ospf_neighbors defined)
+      ospf_process_id: "1"            # Expected OSPF process ID (optional)
+      ospf_router_id: "10.0.0.1"      # Expected OSPF router ID (optional)
+      ospf_neighbors:                  # Expected OSPF neighbor IPs (required for neighbor tests)
+        - 192.168.1.2
+        - 192.168.2.2
+      ospf_interfaces:                 # Expected OSPF-enabled interfaces (optional)
+        - GigabitEthernet0/0
+        - GigabitEthernet0/1
+        - Loopback0
+      ospf_areas:                      # Expected OSPF areas (optional)
+        - "0.0.0.0"
+      ospf_expected_routes:            # Routes expected via OSPF (optional)
+        - 10.0.0.2/32
+        - 172.16.0.0/24
+      ospf_min_route_count: 10         # Minimum expected OSPF routes (optional)
+      ospf_interface_costs:            # Expected interface costs (optional)
+        GigabitEthernet0/0: 1
+        GigabitEthernet0/1: 10
+```
+
+### Running OSPF Health Tests
+
+```bash
+# Run all Layer 3 tests (including OSPF)
+pyats run job jobs/run_all.py --testbed testbeds/ospf_testbed.yaml
+
+# Run OSPF health test directly
+pyats run testscript tests/layer3/test_ospf_health.py --testbed testbeds/ospf_testbed.yaml
+```
+
+### OSPF Test Descriptions
+
+| Testcase | Description | Key Validations |
+|----------|-------------|-----------------|
+| `OspfProcessHealth` | Process status validation | Process running, router ID, SPF timing |
+| `OspfNeighborHealth` | Neighbor relationship check | FULL state, dead timers |
+| `OspfInterfaceHealth` | Interface status check | Operational state, costs |
+| `OspfDatabaseHealth` | Database consistency | LSA presence, area configuration |
+| `OspfRouteHealth` | Route table validation | Expected routes, route count |
 
 ### Test Output
 
