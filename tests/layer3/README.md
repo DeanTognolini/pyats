@@ -96,14 +96,14 @@ devices:
 ### Running MPLS Tests
 
 ```bash
-# Run all Layer 3 tests (including MPLS)
-pyats run job jobs/run_all.py --testbed testbeds/mpls_testbed.yaml
-
-# Run only MPLS tests
-pyats run job jobs/run_layer3.py --testbed testbeds/mpls_testbed.yaml
+# Run MPLS tests via job file
+pyats run job jobs/run_mpls.py --testbed testbeds/mpls_testbed.yaml
 
 # Run MPLS test directly
 pyats run testscript tests/layer3/test_mpls_core.py --testbed testbeds/mpls_testbed.yaml
+
+# With HTML reports
+pyats run job jobs/run_mpls.py --testbed testbeds/mpls_testbed.yaml --html-logs ./reports/
 ```
 
 ## OSPF Health Test Configuration
@@ -140,11 +140,14 @@ devices:
 ### Running OSPF Health Tests
 
 ```bash
-# Run all Layer 3 tests (including OSPF)
-pyats run job jobs/run_all.py --testbed testbeds/ospf_testbed.yaml
+# Run OSPF tests via job file
+pyats run job jobs/run_ospf.py --testbed testbeds/ospf_testbed.yaml
 
 # Run OSPF health test directly
 pyats run testscript tests/layer3/test_ospf_health.py --testbed testbeds/ospf_testbed.yaml
+
+# With HTML reports
+pyats run job jobs/run_ospf.py --testbed testbeds/ospf_testbed.yaml --html-logs ./reports/
 ```
 
 ### OSPF Test Descriptions
