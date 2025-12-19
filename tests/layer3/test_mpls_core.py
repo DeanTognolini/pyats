@@ -304,14 +304,18 @@ class LspPath(aetest.Testcase):
                         found = False
                         if 'vrf' in output:
                             for vrf, vrf_data in output['vrf'].items():
-                                if 'local_label_bindings' in vrf_data:
-                                    for binding in vrf_data['local_label_bindings'].values():
-                                        prefix = binding.get('prefix')
-                                        if prefix and prefix.startswith(lsp_prefix):
+                                if 'lib_entry' in vrf_data:
+                                    # Prefix is the KEY in lib_entry
+                                    for prefix, entry_data in vrf_data['lib_entry'].items():
+                                        # Match prefix with or without CIDR notation
+                                        # e.g., "10.29.252.185" should match "10.29.252.185/32"
+                                        if prefix.startswith(lsp_prefix.rstrip('/')):
                                             # Check if we have remote bindings (LSP established)
-                                            if 'remote_binding' in binding:
+                                            if 'remote_binding' in entry_data:
                                                 found = True
                                                 break
+                                if found:
+                                    break
 
                         if not found:
                             missing_lsps.append(lsp_prefix)
