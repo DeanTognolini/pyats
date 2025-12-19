@@ -547,10 +547,12 @@ class OspfDatabaseHealth(aetest.Testcase):
                                         if 'areas' in inst_data:
                                             for area, area_data in inst_data['areas'].items():
                                                 # Count different LSA types
+                                                # Structure: database -> lsa_types -> {type_num} -> lsas
                                                 if 'database' in area_data:
-                                                    for lsa_type, lsa_data in area_data['database'].items():
-                                                        if 'lsa_type' in lsa_data:
-                                                            lsa_count += len(lsa_data.get('lsas', {}))
+                                                    db = area_data['database']
+                                                    if 'lsa_types' in db:
+                                                        for lsa_type_num, lsa_type_data in db['lsa_types'].items():
+                                                            lsa_count += len(lsa_type_data.get('lsas', {}))
 
                 if lsa_count == 0:
                     failed_devices.append({
