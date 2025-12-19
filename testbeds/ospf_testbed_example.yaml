@@ -1,0 +1,226 @@
+# =============================================================================
+# OSPF Health Check Testbed Example
+# =============================================================================
+#
+# This testbed demonstrates how to configure devices for OSPF health testing.
+# Copy this file and customize it for your network.
+#
+# CUSTOM ATTRIBUTES FOR OSPF TESTING:
+# ------------------------------------
+#   ospf_enabled:         (Optional) Explicitly mark device as OSPF-enabled
+#   ospf_process_id:      (Optional) Expected OSPF process ID
+#   ospf_router_id:       (Optional) Expected OSPF router ID
+#   ospf_neighbors:       List of expected OSPF neighbor IP addresses
+#   ospf_interfaces:      (Optional) List of expected OSPF-enabled interfaces
+#   ospf_areas:           (Optional) List of expected OSPF areas
+#   ospf_expected_routes: (Optional) List of routes expected via OSPF
+#   ospf_min_route_count: (Optional) Minimum expected OSPF route count
+#   ospf_interface_costs: (Optional) Dict of interface name to expected cost
+#
+# =============================================================================
+
+testbed:
+  name: OSPF_Health_Check_Network
+
+  credentials:
+    default:
+      username: "%ENV{PYATS_USERNAME}"
+      password: "%ENV{PYATS_PASSWORD}"
+    enable:
+      password: "%ENV{PYATS_ENABLE_PASSWORD,}"
+
+devices:
+  # Core Router 1
+  CORE1:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.1
+        port: 22
+
+    custom:
+      # OSPF-specific attributes
+      ospf_enabled: true
+      ospf_process_id: "1"
+      ospf_router_id: "10.0.0.1"
+
+      # Expected OSPF neighbors (neighbor IPs from 'show ip ospf neighbor')
+      ospf_neighbors:
+        - 192.168.1.2   # CORE2 on Gi0/0
+        - 192.168.2.2   # DIST1 on Gi0/1
+        - 192.168.3.2   # DIST2 on Gi0/2
+
+      # Expected OSPF-enabled interfaces
+      ospf_interfaces:
+        - GigabitEthernet0/0
+        - GigabitEthernet0/1
+        - GigabitEthernet0/2
+        - Loopback0
+
+      # Expected OSPF areas
+      ospf_areas:
+        - "0.0.0.0"     # Backbone area
+
+      # Expected routes learned via OSPF
+      ospf_expected_routes:
+        - 10.0.0.2/32   # CORE2 loopback
+        - 10.0.0.3/32   # DIST1 loopback
+        - 10.0.0.4/32   # DIST2 loopback
+        - 172.16.0.0/24 # User network 1
+        - 172.16.1.0/24 # User network 2
+
+      # Minimum expected route count
+      ospf_min_route_count: 10
+
+      # Expected interface costs (optional)
+      ospf_interface_costs:
+        GigabitEthernet0/0: 1
+        GigabitEthernet0/1: 10
+        GigabitEthernet0/2: 10
+
+  # Core Router 2
+  CORE2:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.2
+        port: 22
+
+    custom:
+      ospf_enabled: true
+      ospf_process_id: "1"
+      ospf_router_id: "10.0.0.2"
+
+      ospf_neighbors:
+        - 192.168.1.1   # CORE1 on Gi0/0
+        - 192.168.4.2   # DIST1 on Gi0/1
+        - 192.168.5.2   # DIST2 on Gi0/2
+
+      ospf_interfaces:
+        - GigabitEthernet0/0
+        - GigabitEthernet0/1
+        - GigabitEthernet0/2
+        - Loopback0
+
+      ospf_areas:
+        - "0.0.0.0"
+
+      ospf_expected_routes:
+        - 10.0.0.1/32   # CORE1 loopback
+        - 10.0.0.3/32   # DIST1 loopback
+        - 10.0.0.4/32   # DIST2 loopback
+        - 172.16.0.0/24
+        - 172.16.1.0/24
+
+      ospf_min_route_count: 10
+
+  # Distribution Router 1
+  DIST1:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.3
+        port: 22
+
+    custom:
+      ospf_enabled: true
+      ospf_process_id: "1"
+      ospf_router_id: "10.0.0.3"
+
+      ospf_neighbors:
+        - 192.168.2.1   # CORE1 on Gi0/0
+        - 192.168.4.1   # CORE2 on Gi0/1
+
+      ospf_interfaces:
+        - GigabitEthernet0/0
+        - GigabitEthernet0/1
+        - Loopback0
+
+      ospf_areas:
+        - "0.0.0.0"
+
+      ospf_expected_routes:
+        - 10.0.0.1/32   # CORE1 loopback
+        - 10.0.0.2/32   # CORE2 loopback
+        - 10.0.0.4/32   # DIST2 loopback
+
+      ospf_min_route_count: 5
+
+  # Distribution Router 2
+  DIST2:
+    os: iosxe
+    type: router
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.4
+        port: 22
+
+    custom:
+      ospf_enabled: true
+      ospf_process_id: "1"
+      ospf_router_id: "10.0.0.4"
+
+      ospf_neighbors:
+        - 192.168.3.1   # CORE1 on Gi0/0
+        - 192.168.5.1   # CORE2 on Gi0/1
+
+      ospf_interfaces:
+        - GigabitEthernet0/0
+        - GigabitEthernet0/1
+        - Loopback0
+
+      ospf_areas:
+        - "0.0.0.0"
+
+      ospf_expected_routes:
+        - 10.0.0.1/32   # CORE1 loopback
+        - 10.0.0.2/32   # CORE2 loopback
+        - 10.0.0.3/32   # DIST1 loopback
+
+      ospf_min_route_count: 5
+
+# =============================================================================
+# TOPOLOGY (For documentation)
+# =============================================================================
+#
+# Network Topology:
+#
+#           CORE1 (10.0.0.1) -------- CORE2 (10.0.0.2)
+#             /    \                    /    \
+#            /      \                  /      \
+#     DIST1 (10.0.0.3)              DIST2 (10.0.0.4)
+#
+# All routers are in OSPF Area 0 (backbone)
+# All routers have Loopback0 interfaces advertised in OSPF
+#
+# Links:
+#   CORE1 Gi0/0 <---> CORE2 Gi0/0  (192.168.1.0/30)
+#   CORE1 Gi0/1 <---> DIST1 Gi0/0  (192.168.2.0/30)
+#   CORE1 Gi0/2 <---> DIST2 Gi0/0  (192.168.3.0/30)
+#   CORE2 Gi0/1 <---> DIST1 Gi0/1  (192.168.4.0/30)
+#   CORE2 Gi0/2 <---> DIST2 Gi0/1  (192.168.5.0/30)
+#
+# =============================================================================
