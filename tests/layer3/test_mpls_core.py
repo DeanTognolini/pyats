@@ -151,13 +151,24 @@ class MplsLabels(aetest.Testcase):
                         for vrf, vrf_data in output['vrf'].items():
                             if 'local_label' in vrf_data:
                                 for label, label_data in vrf_data['local_label'].items():
-                                    outgoing_label = label_data.get('outgoing_label', {})
-                                    for out_label, out_data in outgoing_label.items():
+                                    # Key is 'outgoing_label_or_vc' in actual output
+                                    outgoing_label_or_vc = label_data.get('outgoing_label_or_vc', {})
+                                    for out_label, out_data in outgoing_label_or_vc.items():
                                         if 'prefix_or_tunnel_id' in out_data:
-                                            for pfx_data in out_data['prefix_or_tunnel_id'].values():
-                                                if pfx_data.get('prefix') == prefix:
+                                            # Prefix is the KEY, not a nested value
+                                            for pfx in out_data['prefix_or_tunnel_id'].keys():
+                                                # Match prefix with or without CIDR notation
+                                                # e.g., "10.29.252.185" should match "10.29.252.185/32"
+                                                if pfx.startswith(prefix.rstrip('/')):
                                                     found = True
                                                     break
+                                        if found:
+                                            break
+                                if found:
+                                    break
+                            if found:
+                                break
+
                         if not found:
                             missing_labels.append(prefix)
 
