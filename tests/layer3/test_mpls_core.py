@@ -214,7 +214,19 @@ class OspfNeighbors(aetest.Testcase):
 
                 # Extract FULL state neighbors
                 full_neighbors = []
-                if 'vrf' in output:
+
+                # Handle simple output format (interfaces -> neighbors)
+                if 'interfaces' in output:
+                    for intf, intf_data in output['interfaces'].items():
+                        if 'neighbors' in intf_data:
+                            for nbr, nbr_data in intf_data['neighbors'].items():
+                                state = nbr_data.get('state', '').upper()
+                                # State is typically "FULL/  -" or "FULL/DR", etc.
+                                if state.startswith('FULL'):
+                                    full_neighbors.append(nbr)
+
+                # Handle complex VRF output format (for multi-VRF setups)
+                elif 'vrf' in output:
                     for vrf, vrf_data in output['vrf'].items():
                         if 'address_family' in vrf_data:
                             for af, af_data in vrf_data['address_family'].items():
@@ -227,7 +239,7 @@ class OspfNeighbors(aetest.Testcase):
                                                         if 'neighbors' in intf_data:
                                                             for nbr, nbr_data in intf_data['neighbors'].items():
                                                                 state = nbr_data.get('state', '').upper()
-                                                                if state == 'FULL':
+                                                                if state.startswith('FULL'):
                                                                     full_neighbors.append(nbr)
 
                 # Verify all expected neighbors are FULL
