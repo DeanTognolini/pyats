@@ -107,94 +107,6 @@ class LdpNeighbors(aetest.Testcase):
             self.failed(f"LDP neighbor issues found: {failed_devices}")
 
 
-class MplsLabels(aetest.Testcase):
-    """Verify MPLS label bindings."""
-
-    @aetest.setup
-    def setup(self, mpls_routers):
-        """Verify we have MPLS routers to test."""
-        if not mpls_routers:
-            self.skipped("No MPLS-enabled routers found in testbed")
-
-    @aetest.test
-    def verify_label_bindings(self, mpls_routers):
-        """Verify MPLS label bindings exist for critical prefixes."""
-        failed_devices = []
-
-        for device in mpls_routers:
-            logger.info(f"Checking MPLS label bindings on {device.name}...")
-
-            # Get critical prefixes that must have labels
-            critical_prefixes = device.custom.get('critical_prefixes', [])
-
-            if not critical_prefixes:
-                logger.info(f"{device.name}: No critical prefixes defined, checking general MPLS forwarding")
-
-            try:
-                # Parse MPLS forwarding table
-                output = device.parse('show mpls forwarding-table')
-
-                # Check if we have any label bindings at all
-                if 'vrf' not in output or not output['vrf']:
-                    failed_devices.append({
-                        'device': device.name,
-                        'issue': 'No MPLS forwarding entries found'
-                    })
-                    logger.error(f"{device.name}: No MPLS forwarding entries!")
-                    continue
-
-                # If critical prefixes specified, verify they have labels
-                if critical_prefixes:
-                    missing_labels = []
-                    for prefix in critical_prefixes:
-                        found = False
-                        for vrf, vrf_data in output['vrf'].items():
-                            if 'local_label' in vrf_data:
-                                for label, label_data in vrf_data['local_label'].items():
-                                    # Key is 'outgoing_label_or_vc' in actual output
-                                    outgoing_label_or_vc = label_data.get('outgoing_label_or_vc', {})
-                                    for out_label, out_data in outgoing_label_or_vc.items():
-                                        if 'prefix_or_tunnel_id' in out_data:
-                                            # Prefix is the KEY, not a nested value
-                                            for pfx in out_data['prefix_or_tunnel_id'].keys():
-                                                # Match prefix with or without CIDR notation
-                                                # e.g., "10.29.252.185" should match "10.29.252.185/32"
-                                                if pfx.startswith(prefix.rstrip('/')):
-                                                    found = True
-                                                    break
-                                        if found:
-                                            break
-                                if found:
-                                    break
-                            if found:
-                                break
-
-                        if not found:
-                            missing_labels.append(prefix)
-
-                    if missing_labels:
-                        failed_devices.append({
-                            'device': device.name,
-                            'missing_labels': missing_labels
-                        })
-                        logger.error(f"{device.name}: Missing labels for: {missing_labels}")
-                    else:
-                        logger.info(f"{device.name}: All critical prefixes have labels ✓")
-                else:
-                    # Just verify MPLS is operational
-                    logger.info(f"{device.name}: MPLS forwarding operational ✓")
-
-            except Exception as e:
-                logger.error(f"Failed to check MPLS labels on {device.name}: {e}")
-                failed_devices.append({
-                    'device': device.name,
-                    'error': str(e)
-                })
-
-        if failed_devices:
-            self.failed(f"MPLS label issues found: {failed_devices}")
-
-
 class OspfNeighbors(aetest.Testcase):
     """Verify OSPF neighbor relationships."""
 
@@ -348,6 +260,83 @@ class LoopbackConnectivity(aetest.Testcase):
 
         if failed_tests:
             self.failed(f"Loopback connectivity failures: {failed_tests}")
+
+
+class LspPath(aetest.Testcase):
+    """Verify LSP path establishment."""
+
+    @aetest.setup
+    def setup(self, mpls_routers):
+        """Verify we have MPLS routers to test."""
+        if not mpls_routers:
+            self.skipped("No MPLS-enabled routers found in testbed")
+
+    @aetest.test
+    def verify_lsp_paths(self, mpls_routers):
+        """Verify LSP paths are established for critical destinations."""
+        failed_devices = []
+
+        for device in mpls_routers:
+            logger.info(f"Checking LSP paths on {device.name}...")
+
+            # Get critical LSP destinations from custom attributes
+            critical_lsps = device.custom.get('critical_lsps', [])
+
+            if not critical_lsps:
+                logger.info(f"{device.name}: No critical LSPs defined, checking general MPLS paths")
+
+            try:
+                # Parse MPLS LDP bindings to verify paths
+                output = device.parse('show mpls ldp bindings')
+
+                if not output:
+                    failed_devices.append({
+                        'device': device.name,
+                        'issue': 'No MPLS LDP bindings found'
+                    })
+                    logger.error(f"{device.name}: No LDP bindings!")
+                    continue
+
+                # If critical LSPs specified, verify they exist
+                if critical_lsps:
+                    missing_lsps = []
+                    for lsp_prefix in critical_lsps:
+                        found = False
+                        if 'vrf' in output:
+                            for vrf, vrf_data in output['vrf'].items():
+                                if 'local_label_bindings' in vrf_data:
+                                    for binding in vrf_data['local_label_bindings'].values():
+                                        prefix = binding.get('prefix')
+                                        if prefix and prefix.startswith(lsp_prefix):
+                                            # Check if we have remote bindings (LSP established)
+                                            if 'remote_binding' in binding:
+                                                found = True
+                                                break
+
+                        if not found:
+                            missing_lsps.append(lsp_prefix)
+
+                    if missing_lsps:
+                        failed_devices.append({
+                            'device': device.name,
+                            'missing_lsps': missing_lsps
+                        })
+                        logger.error(f"{device.name}: LSPs not established for: {missing_lsps}")
+                    else:
+                        logger.info(f"{device.name}: All critical LSPs established ✓")
+                else:
+                    # Just verify we have some LDP bindings
+                    logger.info(f"{device.name}: LDP bindings present ✓")
+
+            except Exception as e:
+                logger.error(f"Failed to check LSP paths on {device.name}: {e}")
+                failed_devices.append({
+                    'device': device.name,
+                    'error': str(e)
+                })
+
+        if failed_devices:
+            self.failed(f"LSP path issues found: {failed_devices}")
 
 
 class CommonCleanup(aetest.CommonCleanup):
