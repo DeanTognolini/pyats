@@ -12,7 +12,6 @@
 #   ldp_neighbors:      List of expected LDP neighbor router IDs
 #   ospf_neighbors:     List of expected OSPF neighbor IP addresses
 #   critical_prefixes:  (Optional) Prefixes that must have MPLS labels
-#   critical_lsps:      (Optional) LSP destinations that must be established
 #
 # =============================================================================
 
@@ -62,11 +61,6 @@ devices:
       critical_prefixes:
         - 10.0.0.0/24   # Loopback subnet
         - 172.16.0.0/16 # Customer VPN routes
-
-      # Critical LSP destinations (optional)
-      critical_lsps:
-        - 10.0.0.4      # PE2 loopback
-        - 10.0.0.5      # PE3 loopback
 
   # Provider Router 1 (Core)
   P1:
@@ -148,10 +142,6 @@ devices:
       ospf_neighbors:
         - 192.168.4.1   # P1
 
-      critical_lsps:
-        - 10.0.0.1      # PE1 loopback
-        - 10.0.0.5      # PE3 loopback
-
   # Provider Edge Router 3
   PE3:
     os: iosxe
@@ -175,10 +165,6 @@ devices:
 
       ospf_neighbors:
         - 192.168.5.1   # P2
-
-      critical_lsps:
-        - 10.0.0.1      # PE1 loopback
-        - 10.0.0.4      # PE2 loopback
 
 # =============================================================================
 # TOPOLOGY (Optional - for documentation)

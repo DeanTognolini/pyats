@@ -12,7 +12,6 @@ Comprehensive MPLS core network validation including:
 2. **MPLS Label Validation** - Verifies label bindings for critical prefixes
 3. **OSPF Neighbor Verification** - Checks OSPF neighbors are in FULL state
 4. **P Router Loopback Connectivity** - Tests reachability to P router loopbacks
-5. **LSP Path Verification** - Validates LSP establishment for critical destinations
 
 ## Potential Additional Test Cases
 
@@ -42,12 +41,9 @@ devices:
       ospf_neighbors:                  # Expected OSPF neighbor IPs
         - 192.168.1.2
         - 192.168.2.2
-      critical_prefixes:               # Prefixes that must have MPLS labels
+      critical_prefixes:               # Prefixes that must have MPLS labels (optional)
         - 10.0.0.0/24
         - 172.16.0.0/16
-      critical_lsps:                   # LSP destinations that must be established
-        - 10.0.0.4
-        - 10.0.0.5
 
   P1:
     custom:
@@ -65,7 +61,7 @@ devices:
 
 | Role | Description | Tests Applied |
 |------|-------------|---------------|
-| `PE` | Provider Edge router | LDP, OSPF, LSP paths, loopback connectivity |
+| `PE` | Provider Edge router | LDP, OSPF, loopback connectivity |
 | `P` | Provider (core) router | LDP, OSPF, labels, loopback connectivity |
 | `P-PE` | Combined P and PE functions | All MPLS tests |
 
