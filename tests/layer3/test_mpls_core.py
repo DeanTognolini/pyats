@@ -75,9 +75,13 @@ class LdpNeighbors(aetest.Testcase):
                     for vrf, vrf_data in output['vrf'].items():
                         if 'peers' in vrf_data:
                             for peer_id, peer_data in vrf_data['peers'].items():
-                                state = peer_data.get('state', '').lower()
-                                if state == 'oper':
-                                    operational_neighbors.append(peer_id)
+                                # State is nested under label_space_id
+                                if 'label_space_id' in peer_data:
+                                    for ls_id, ls_data in peer_data['label_space_id'].items():
+                                        state = ls_data.get('state', '').lower()
+                                        if state == 'oper':
+                                            operational_neighbors.append(peer_id)
+                                            break  # Only need to check once per peer
 
                 # Verify all expected neighbors are operational
                 missing_neighbors = set(expected_neighbors) - set(operational_neighbors)
