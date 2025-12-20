@@ -1,0 +1,242 @@
+# =============================================================================
+# Layer 2 (Data Link) Validation Testbed Example
+# =============================================================================
+#
+# This testbed demonstrates how to configure devices for Layer 2 testing.
+# Copy this file and customize it for your network.
+#
+# CUSTOM ATTRIBUTES FOR LAYER 2 TESTING:
+# ---------------------------------------
+#   l2_enabled:           (Optional) Explicitly mark device as L2-enabled
+#   expected_vlans:       List of VLAN IDs that should exist on device
+#   trunk_ports:          Dict mapping trunk port names to allowed VLANs
+#   stp_enabled:          (Optional) Enable STP validation tests
+#   stp_mode:             (Optional) Expected STP mode (rapid-pvst, pvst, mst)
+#   stp_root_vlans:       (Optional) List of VLANs where device should be root
+#   port_channels:        List of Port-channel numbers that should exist
+#   lacp_port_channels:   (Optional) List of LACP-enabled Port-channel numbers
+#   expected_macs:        (Optional) List of MAC addresses expected to be learned
+#   lldp_neighbors:       Dict mapping local interface to expected LLDP neighbor name
+#
+# =============================================================================
+
+testbed:
+  name: Layer2_Validation_Network
+
+  credentials:
+    default:
+      username: "%ENV{PYATS_USERNAME}"
+      password: "%ENV{PYATS_PASSWORD}"
+    enable:
+      password: "%ENV{PYATS_ENABLE_PASSWORD,}"
+
+devices:
+  # Core Switch 1 - Distribution/Aggregation Layer
+  CORE-SW1:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.11
+        port: 22
+
+    custom:
+      # Layer 2 attributes
+      l2_enabled: true
+
+      # VLANs that should exist on this switch
+      expected_vlans:
+        - 10    # Management VLAN
+        - 20    # Data VLAN
+        - 30    # Voice VLAN
+        - 100   # Server VLAN
+
+      # Trunk ports and their allowed VLANs
+      trunk_ports:
+        GigabitEthernet1/0/1: "10,20,30,100"  # Trunk to CORE-SW2
+        GigabitEthernet1/0/23: "10,20,30"     # Trunk to ACCESS-SW1
+        GigabitEthernet1/0/24: "10,20,30"     # Trunk to ACCESS-SW2
+
+      # Spanning Tree configuration
+      stp_enabled: true
+      stp_mode: "rapid-pvst"
+      stp_root_vlans:
+        - 10    # Root for Management VLAN
+        - 20    # Root for Data VLAN
+
+      # Port Channel/LACP configuration
+      port_channels:
+        - 1     # Port-channel1 to CORE-SW2
+      lacp_port_channels:
+        - 1
+
+      # LLDP neighbor expectations
+      lldp_neighbors:
+        GigabitEthernet1/0/1: "CORE-SW2"
+        GigabitEthernet1/0/23: "ACCESS-SW1"
+        GigabitEthernet1/0/24: "ACCESS-SW2"
+
+  # Core Switch 2 - Distribution/Aggregation Layer
+  CORE-SW2:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.12
+        port: 22
+
+    custom:
+      l2_enabled: true
+
+      expected_vlans:
+        - 10    # Management VLAN
+        - 20    # Data VLAN
+        - 30    # Voice VLAN
+        - 100   # Server VLAN
+
+      trunk_ports:
+        GigabitEthernet1/0/1: "10,20,30,100"  # Trunk to CORE-SW1
+        GigabitEthernet1/0/23: "10,20,30"     # Trunk to ACCESS-SW1
+        GigabitEthernet1/0/24: "10,20,30"     # Trunk to ACCESS-SW2
+
+      stp_enabled: true
+      stp_mode: "rapid-pvst"
+      stp_root_vlans:
+        - 30    # Root for Voice VLAN
+        - 100   # Root for Server VLAN
+
+      port_channels:
+        - 1     # Port-channel1 to CORE-SW1
+      lacp_port_channels:
+        - 1
+
+      lldp_neighbors:
+        GigabitEthernet1/0/1: "CORE-SW1"
+        GigabitEthernet1/0/23: "ACCESS-SW1"
+        GigabitEthernet1/0/24: "ACCESS-SW2"
+
+  # Access Switch 1 - Edge Layer
+  ACCESS-SW1:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.21
+        port: 22
+
+    custom:
+      l2_enabled: true
+
+      expected_vlans:
+        - 10    # Management VLAN
+        - 20    # Data VLAN
+        - 30    # Voice VLAN
+
+      # Access switch has uplink trunks to both core switches
+      trunk_ports:
+        GigabitEthernet1/0/1: "10,20,30"      # Trunk to CORE-SW1
+        GigabitEthernet1/0/2: "10,20,30"      # Trunk to CORE-SW2
+
+      # STP configuration - should not be root
+      stp_enabled: true
+      stp_mode: "rapid-pvst"
+
+      # Expected MAC addresses (optional - for specific validation)
+      expected_macs:
+        - "0050.56a1.1234"    # Example server MAC
+        - "0050.56a1.5678"    # Example workstation MAC
+
+      # LLDP neighbors
+      lldp_neighbors:
+        GigabitEthernet1/0/1: "CORE-SW1"
+        GigabitEthernet1/0/2: "CORE-SW2"
+
+  # Access Switch 2 - Edge Layer
+  ACCESS-SW2:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.22
+        port: 22
+
+    custom:
+      l2_enabled: true
+
+      expected_vlans:
+        - 10    # Management VLAN
+        - 20    # Data VLAN
+        - 30    # Voice VLAN
+
+      trunk_ports:
+        GigabitEthernet1/0/1: "10,20,30"      # Trunk to CORE-SW1
+        GigabitEthernet1/0/2: "10,20,30"      # Trunk to CORE-SW2
+
+      stp_enabled: true
+      stp_mode: "rapid-pvst"
+
+      expected_macs:
+        - "0050.56a1.9abc"    # Example server MAC
+        - "0050.56a1.def0"    # Example workstation MAC
+
+      lldp_neighbors:
+        GigabitEthernet1/0/1: "CORE-SW1"
+        GigabitEthernet1/0/2: "CORE-SW2"
+
+# =============================================================================
+# TOPOLOGY (For documentation)
+# =============================================================================
+#
+# Network Topology:
+#
+#                      CORE-SW1 ---------- CORE-SW2
+#                      (Root 10,20)       (Root 30,100)
+#                         /    \            /    \
+#                        /      \          /      \
+#                       /        \        /        \
+#                 ACCESS-SW1    ACCESS-SW2
+#                 (Edge)        (Edge)
+#
+# VLANs:
+#   VLAN 10  - Management  (Root: CORE-SW1)
+#   VLAN 20  - Data        (Root: CORE-SW1)
+#   VLAN 30  - Voice       (Root: CORE-SW2)
+#   VLAN 100 - Server      (Root: CORE-SW2)
+#
+# Port Channels:
+#   Port-channel1: CORE-SW1 <---> CORE-SW2 (LACP)
+#
+# Trunk Links:
+#   CORE-SW1 Gi1/0/1  <---> CORE-SW2 Gi1/0/1  (Port-channel1)
+#   CORE-SW1 Gi1/0/23 <---> ACCESS-SW1 Gi1/0/1
+#   CORE-SW1 Gi1/0/24 <---> ACCESS-SW2 Gi1/0/1
+#   CORE-SW2 Gi1/0/23 <---> ACCESS-SW1 Gi1/0/2
+#   CORE-SW2 Gi1/0/24 <---> ACCESS-SW2 Gi1/0/2
+#
+# Spanning Tree:
+#   - Mode: Rapid PVST+
+#   - CORE-SW1 is root for VLANs 10, 20
+#   - CORE-SW2 is root for VLANs 30, 100
+#   - ACCESS-SW1 and ACCESS-SW2 are non-root bridges
+#
+# =============================================================================
