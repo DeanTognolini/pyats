@@ -1,0 +1,190 @@
+# =============================================================================
+# REP (Resilient Ethernet Protocol) Health Check Testbed Example
+# =============================================================================
+#
+# This testbed demonstrates how to configure devices for REP health testing.
+# Copy this file and customize it for your network.
+#
+# CUSTOM ATTRIBUTES FOR REP TESTING:
+# ------------------------------------
+#   rep_enabled:           (Optional) Explicitly mark device as REP-enabled
+#   rep_segment_id:        REP segment ID (typically 1-1024)
+#   rep_role:              REP role (primary-edge, edge, intermediate, transit)
+#   rep_interfaces:        List of expected REP-enabled interfaces
+#   rep_expected_neighbors: List of expected REP neighbor interfaces
+#   rep_blocked_ports:     (Optional) List of expected blocked ports (for edge nodes)
+#
+# REP TOPOLOGY OVERVIEW:
+# ----------------------
+# REP operates in a ring topology where:
+# - One port is blocked to prevent loops (typically on primary-edge node)
+# - Fast convergence (sub-second) when link failure detected
+# - Edge nodes terminate the REP segment
+# - Intermediate/transit nodes are in the middle of the segment
+#
+# =============================================================================
+
+testbed:
+  name: REP_Health_Check_Network
+
+  credentials:
+    default:
+      username: "%ENV{PYATS_USERNAME}"
+      password: "%ENV{PYATS_PASSWORD}"
+    enable:
+      password: "%ENV{PYATS_ENABLE_PASSWORD,}"
+
+devices:
+  # Primary Edge Switch (SW1)
+  SW1:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.11
+        port: 22
+
+    custom:
+      # REP-specific attributes
+      rep_enabled: true
+      rep_segment_id: 1
+      rep_role: "primary-edge"
+
+      # REP interfaces (typically 2 interfaces in a ring)
+      rep_interfaces:
+        - GigabitEthernet1/0/1  # Connected to SW2
+        - GigabitEthernet1/0/2  # Connected to SW4
+
+      # Expected REP neighbors (interfaces on this device that see neighbors)
+      rep_expected_neighbors:
+        - GigabitEthernet1/0/1  # Sees SW2
+        - GigabitEthernet1/0/2  # Sees SW4
+
+      # Expected blocked port (primary edge typically has one blocked port)
+      rep_blocked_ports:
+        - GigabitEthernet1/0/1  # Alternate port (blocked by default)
+
+  # Intermediate Switch (SW2)
+  SW2:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.12
+        port: 22
+
+    custom:
+      rep_enabled: true
+      rep_segment_id: 1
+      rep_role: "intermediate"
+
+      rep_interfaces:
+        - GigabitEthernet1/0/1  # Connected to SW1
+        - GigabitEthernet1/0/2  # Connected to SW3
+
+      rep_expected_neighbors:
+        - GigabitEthernet1/0/1  # Sees SW1
+        - GigabitEthernet1/0/2  # Sees SW3
+
+      # No blocked ports expected on intermediate node (unless link failure)
+
+  # Intermediate Switch (SW3)
+  SW3:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.13
+        port: 22
+
+    custom:
+      rep_enabled: true
+      rep_segment_id: 1
+      rep_role: "intermediate"
+
+      rep_interfaces:
+        - GigabitEthernet1/0/1  # Connected to SW2
+        - GigabitEthernet1/0/2  # Connected to SW4
+
+      rep_expected_neighbors:
+        - GigabitEthernet1/0/1  # Sees SW2
+        - GigabitEthernet1/0/2  # Sees SW4
+
+  # Edge Switch (SW4)
+  SW4:
+    os: iosxe
+    type: switch
+    credentials:
+      default:
+        username: "%ENV{PYATS_USERNAME}"
+        password: "%ENV{PYATS_PASSWORD}"
+    connections:
+      cli:
+        protocol: ssh
+        ip: 10.1.1.14
+        port: 22
+
+    custom:
+      rep_enabled: true
+      rep_segment_id: 1
+      rep_role: "edge"
+
+      rep_interfaces:
+        - GigabitEthernet1/0/1  # Connected to SW3
+        - GigabitEthernet1/0/2  # Connected to SW1
+
+      rep_expected_neighbors:
+        - GigabitEthernet1/0/1  # Sees SW3
+        - GigabitEthernet1/0/2  # Sees SW1
+
+# =============================================================================
+# TOPOLOGY (For documentation)
+# =============================================================================
+#
+# REP Ring Topology (Segment 1):
+#
+#         SW1 (Primary Edge)
+#        /   \
+#       /     \
+#     SW2     SW4 (Edge)
+#      |       |
+#      |       |
+#     SW3------+
+#
+# Ring Configuration:
+# - SW1: Primary Edge Node (has alternate blocked port on Gi1/0/1)
+# - SW2: Intermediate/Transit Node
+# - SW3: Intermediate/Transit Node
+# - SW4: Edge Node (terminates segment)
+#
+# Normal Operation:
+# - SW1 Gi1/0/1 is blocked (alternate port)
+# - All other ports are forwarding
+# - Traffic flows: SW1 -> SW4 -> SW3 -> SW2 -> SW1 (blocked)
+#
+# Failure Scenario (if SW2-SW3 link fails):
+# - REP detects failure (sub-second)
+# - SW1 unblocks Gi1/0/1 (alternate port)
+# - Traffic reroutes through SW1 -> SW2 and SW4 -> SW3
+#
+# Configuration Example (per interface):
+#   interface GigabitEthernet1/0/1
+#     rep segment 1 edge primary
+#     no shutdown
+#
+# =============================================================================
