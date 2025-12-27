@@ -102,14 +102,16 @@ open reports/TaskLog.html
 .
 ├── jobs/                       # Job orchestration files
 │   ├── run_all.py             # Execute all test suites
-│   └── run_layer1.py          # Execute Layer 1 tests
+│   ├── run_layer1.py          # Execute Layer 1 tests
+│   └── run_layer2.py          # Execute Layer 2 tests
 │
 ├── tests/                      # Test suites by category
 │   ├── layer1/                # Physical layer validation
 │   │   ├── test_layer1.py     # Link status, optics, errors, CDP
 │   │   └── __init__.py
-│   ├── layer2/                # Data link layer (placeholder)
-│   │   └── README.md          # Guide for adding L2 tests
+│   ├── layer2/                # Data link layer
+│   │   ├── test_stp.py        # Spanning Tree Protocol validation
+│   │   └── README.md          # Guide for L2 tests
 │   └── layer3/                # Network layer (placeholder)
 │       └── README.md          # Guide for adding L3 tests
 │
@@ -129,6 +131,7 @@ open reports/TaskLog.html
 ├── docker-compose.yml          # Compose configuration
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Environment template
+├── AGENTS.md                   # Guide for AI agents & developers
 ├── README.md                   # This file
 ├── TEMPLATE_USAGE.md           # Detailed usage guide
 └── SAMPLE_OUTPUT.md            # Example test outputs
@@ -155,10 +158,20 @@ The template includes a complete Layer 1 test suite (`tests/layer1/test_layer1.p
 - SFP-10G-SR, SFP-10G-LR, SFP-10G-ER
 - SFP-1G-SX, SFP-1G-LX
 
-### Layer 2 & Layer 3 (Placeholders)
+### Layer 2 Validation (Included)
 
-The `tests/layer2/` and `tests/layer3/` directories include README files with:
-- Suggested test cases (VLANs, STP, BGP, OSPF, etc.)
+The template includes a Layer 2 test suite (`tests/layer2/test_stp.py`) that validates:
+
+| Test | Description | Failure Example |
+|------|-------------|----------------|
+| **STP Global** | Verifies STP is enabled and mode | `sw1: Parser returned empty data` |
+| **Root Bridge** | Checks for root bridge presence | `sw1: Missing root info for VLAN 10` |
+| **Interface States** | Validates roles (Root/Desg/Alt) and Status | `sw1 Gi1/0/1: No status found` |
+
+### Layer 3 (Placeholder)
+
+The `tests/layer3/` directory includes a README file with:
+- Suggested test cases (BGP, OSPF, etc.)
 - Code examples and patterns
 - Getting started guides
 
@@ -442,6 +455,7 @@ See [TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md#troubleshooting) for more troublesho
 ## 📚 Documentation
 
 - **[TEMPLATE_USAGE.md](./TEMPLATE_USAGE.md)** - Comprehensive guide for using this template
+- **[AGENTS.md](./AGENTS.md)** - Guide for AI agents & developers
 - **[SAMPLE_OUTPUT.md](./SAMPLE_OUTPUT.md)** - Example test outputs and reports
 - **[testbeds/README.md](./testbeds/README.md)** - Testbed configuration guide
 - **[tests/layer2/README.md](./tests/layer2/README.md)** - Layer 2 test ideas
@@ -478,7 +492,7 @@ See [LICENSE](./LICENSE) file for details.
 | Feature | Status |
 |---------|--------|
 | Layer 1 Tests | ✅ Included |
-| Layer 2 Tests | 📝 Placeholder |
+| Layer 2 Tests | ✅ Included |
 | Layer 3 Tests | 📝 Placeholder |
 | Multi-vendor Support | ✅ Yes (IOS, XE, XR, NXOS, ASA, Junos) |
 | Docker Support | ✅ Included |
